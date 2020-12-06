@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script>
+
+        function register(event) {
+            var user = {
+                username: $("#username").val(),
+                type: $("#type").val(),
+                password: $("#password").val(),
+                confirmPassword: $("#confirmPassword").val(),
+                name: $("#name").val(),
+            }
+            $('#responseMessage').html("");
+
+            if (course.course_id == "") {
+                $('#responseMessage').html("<b style='color:red'>Sorry the course info is incomplete</b>");
+                return
+            }
+            event.preventDefault();
+            $.ajax({
+                url: 'register',
+                type: 'post',
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function (response) {
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+"</b>");
+                    $("#courseForm").trigger("reset"); 
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
+                },
+                data: JSON.stringify(course)
+            });
+        }
+    </script>
+    <head>
+        <meta charset="UTF-8">
+        <title>Create ClassBoard Account</title>
+    </head>
+    <body style="text-align: center;">
+        <h1>Create New Account</h1>
+        <h3>Enter the following to create a new account</h3>
+        {{if .Message}}
+            <h4 style="color:red">{{.Message}}</h4>
+        {{end}}
+        <form method="post">
+            <label for ="type">Register as:</label><br>
+            <input type="radio" id="type" name="type" value="lecturer" required><label for="lecturer">Lecturer</label>
+            <input type="radio" id="type" name="type" value="student" required><label for="student">Student</label><br><br>
+            <label for ="username">Username:</label><br>
+            <input type="text" id="username" name="username" placeholder="username" required><br><br>
+            <label for ="password">Password:</label><br>
+            <i>&nbsp;(min 8 chars consists of 1 digit ,1 uppercase, 1 lowercase and 1 special char)</i><br>
+            <input type="password" id="password" name="password" placeholder="password" autocomplete="off" required><br><br>
+            <label for ="confirmPassword">Confirm Password:</label><br>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="confirmPassword" autocomplete="off" required><br><br>
+            <label for ="name">Name:</label><br>
+            <input type="text" id="name" name="name" placeholder="name" required><br><br>
+            <input type="submit" value="Register Account!" onclick="register(event)">
+        </form>
+
+        <h3><a href="/">Back to Main Page</a></h3>
+    </body>
+</html>

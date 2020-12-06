@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Welcome to the ClassBoard</title>
+    </head>
+
+    <body style="text-align: center;">
+
+        <h1>Welcome to the ClassBoard</h1>
+        <h3>Please login to your account</h3>
+        {{if .Message}}
+            <h4 style="color:red">{{.Message}}</h4>
+        {{end}}
+        <form action="/login" method="post" autocomplete="off">
+            <input type="text" name="username" placeholder="username" required/><br>
+            <input type="password" name="password" placeholder="password" required/><br>
+            <input type="submit" />
+        </form>
+        <h5>If you don't have account, <a href="/register">please click here to Register</a></h2>
+
+    </body>
+</html>
