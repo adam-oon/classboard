@@ -1,6 +1,8 @@
 package main
 
 import (
+	"classboard/helper"
+	"classboard/models"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -25,6 +29,11 @@ type User struct {
 	Name            string
 }
 
+type UserLogin struct {
+	Username string
+	Password string
+}
+
 type ResMessage struct {
 	ResponseText string
 	ID           string
@@ -37,13 +46,13 @@ func sanitizeUserInput(user *User) {
 }
 
 func register(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-	// if alreadyLoggedIn(req) {
-	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
-	// 	return
-	// }
+	if alreadyLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
 
-	// var newUser User
+	res.Header().Set("Content-Type", "application/json")
+
 	var mLog messageLog
 	// process form submission
 	if req.Method == http.MethodPost { //POST
@@ -68,105 +77,160 @@ func register(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
+			err = helper.CheckPasswordStrength(newUser.Password)
+			if err != nil {
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
+				return
+			}
+
 			if newUser.Password != newUser.ConfirmPassword {
-				res.WriteHeader(http.StatusForbidden)
+				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Passwords are not match"})
 				return
 			}
 
-			var id string
-			// check course existence
-			rows, err := db.Query("SELECT COUNT(UPPERProductID) FROM "+os.Getenv("DB_SCHEMA")+".courses WHERE course_id = ?", newUser.Course_id)
+			var count int
+			// check user existence
+			rows, err := db.Query("SELECT COUNT(username) as totalUsername FROM "+os.Getenv("DB_SCHEMA")+".users WHERE username = ?", newUser.Username)
 			defer rows.Close()
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the course cannot be added"})
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the user cannot be added"})
 				return
 			}
 
 			for rows.Next() {
-				err := rows.Scan(&id)
+				err := rows.Scan(&count)
 				if err != nil {
 					res.WriteHeader(http.StatusUnprocessableEntity)
-					json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the course cannot be added"})
+					json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the user has been taken. Please choose another one"})
 					return
 				}
 				break
 			}
 
-			if id == "" {
-				query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".courses (course_id, title, description, lecturer, fee) VALUES ('%s', '%s', '%s', '%s', %.2f)",
-					newUser.Course_id, newUser.Title, newUser.Description, newUser.Lecturer, newUser.Fee)
-				_, err := db.Exec(query)
-
+			if count == 0 {
+				bPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.MinCost)
 				if err != nil {
-					panic(err.Error())
+					res.WriteHeader(http.StatusInternalServerError)
+					mLog = messageLog{"Internal Server Error. Please contact system administrator!"}
+					fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", mLog)
+					if fatalErr != nil {
+						log.Fatalln(fatalErr)
+					}
+					return
+				}
+
+				newUser.Password = string(bPassword)
+
+				var errExec error
+				// store new user info
+				query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".users ( username, password, type, name) VALUES ('%s', '%s', '%s','%s')",
+					newUser.Username, newUser.Password, newUser.Type, newUser.Name)
+				_, errExec = db.Exec(query)
+
+				if errExec != nil {
+					panic(errExec.Error())
 				}
 
 				res.WriteHeader(http.StatusCreated)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Course is created"})
-				return
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Register Successful!"})
 
 			} else {
 				res.WriteHeader(http.StatusConflict)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the course is already exist"})
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the username is already taken"})
 				return
+
 			}
 		} else {
 			res.WriteHeader(http.StatusUnprocessableEntity)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the course cannot be added"})
-		}
-
-		if username != "" {
-			// check if username exist/ taken
-			if _, exist := mapUsers[username]; exist {
-				res.WriteHeader(http.StatusForbidden)
-				mLog = messageLog{"Username already taken. Please choose another username"}
-				fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", mLog)
-				if fatalErr != nil {
-					log.Fatalln(fatalErr)
-				}
-				return
-			}
-			// create session
-			id, _ := uuid.NewV4()
-			myCookie := &http.Cookie{
-				Name:  "myCookie",
-				Value: id.String(),
-			}
-			http.SetCookie(res, myCookie)
-			mapSessions[myCookie.Value] = username
-			bPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-			if err != nil {
-				res.WriteHeader(http.StatusInternalServerError)
-				mLog = messageLog{"Internal Server Error. Please contact system administrator!"}
-				fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", mLog)
-				if fatalErr != nil {
-					log.Fatalln(fatalErr)
-				}
-				return
-			}
-
-			// store new user info
-			query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".users (id, username, password, type, name) VALUES ('%s', '%s', '%s', '%s','%s')",
-				newUser.ID, newUser.Username, newUser.Password, newUser.Type, newUser.Name)
-			_, err2 := db.Exec(query)
-
-			if err2 != nil {
-				panic(err.Error())
-			}
-
-			res.WriteHeader(http.StatusCreated)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Course is created"})
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the user cannot be added"})
 			return
 		}
 
-		// redirect to main index
+	}
+}
+
+func login(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+	var userLogin UserLogin
+	reqBody, err := ioutil.ReadAll(req.Body)
+
+	if err == nil {
+		err := json.Unmarshal(reqBody, &userLogin)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
+			return
+		}
+
+		userModel := models.UserModel{
+			Db: db,
+		}
+		user := userModel.GetUser(userLogin.Username)
+		if user == (models.User{}) {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
+			return
+		}
+
+		// verify user
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userLogin.Password))
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
+			return
+		}
+
+		// check user session and delete it
+		sessionModel := models.SessionModel{
+			Db: db,
+		}
+		sessionModel.DeleteSession(user.Username)
+
+		// create session
+		id, _ := uuid.NewV4()
+		myCookie := &http.Cookie{
+			Name:     "myCookie",
+			Value:    id.String(),
+			Expires:  time.Now().Add(2 * time.Hour),
+			HttpOnly: true,
+			Domain:   "localhost",
+			Secure:   true,
+		}
+		http.SetCookie(res, myCookie)
+
+		query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, username) VALUES ('%s','%s')",
+			myCookie.Value, user.Username)
+		_, errExec := db.Exec(query)
+		if errExec != nil {
+			panic(errExec.Error())
+		}
+		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Course doesn't exist"})
+		// dashboardPage(res, req)
+	}
+}
+
+func logout(res http.ResponseWriter, req *http.Request) {
+	if !alreadyLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
-	fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", mLog)
-	if fatalErr != nil {
-		log.Fatalln(fatalErr)
+
+	myCookie, _ := req.Cookie("myCookie")
+	// delete the session
+	sessionModel := models.SessionModel{
+		Db: db,
 	}
+	sessionModel.DeleteSessionByID(myCookie.Value)
+	// remove the cookie
+	myCookie = &http.Cookie{
+		Name:   "myCookie",
+		Value:  "",
+		MaxAge: -1,
+	}
+	http.SetCookie(res, myCookie)
+	http.Redirect(res, req, "/", http.StatusSeeOther)
 }

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"classboard/models"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"text/template"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -66,6 +69,9 @@ func main() {
 	router.HandleFunc("/", indexPage)
 	router.HandleFunc("/register", registerPage).Methods("GET")
 	router.HandleFunc("/register", register).Methods("POST")
+	router.HandleFunc("/login", login).Methods("POST")
+	router.HandleFunc("/logout", logout)
+	router.HandleFunc("/dashboard", dashboardPage)
 	// router.HandleFunc("/add", addCoursePage)
 	// router.HandleFunc("/update/{courseid}", updateCoursePage)
 	// router.HandleFunc("/get/{courseid}", getCoursePage)
@@ -78,6 +84,7 @@ func main() {
 
 	var dbErr error
 	connection := os.Getenv("DB_ACCOUNT") + ":" + os.Getenv("DB_PASSWORD") + "@tcp(" + os.Getenv("DB_IP") + ":" + os.Getenv("DB_PORT") + ")/" + os.Getenv("DB_SCHEMA")
+	fmt.Println(connection)
 	db, dbErr = sql.Open("mysql", connection)
 	defer db.Close()
 	if dbErr != nil {
@@ -93,12 +100,24 @@ func main() {
 	}
 }
 
+func alreadyLoggedIn(req *http.Request) bool {
+	myCookie, err := req.Cookie("myCookie")
+	if err != nil {
+		return false
+	}
+	sessionModel := models.SessionModel{
+		Db: db,
+	}
+	ok := sessionModel.CheckSession(myCookie.Value)
+	return ok
+}
+
 func indexPage(res http.ResponseWriter, req *http.Request) {
 	// return to dashboard if login
-	// if alreadyLoggedIn(req) {
-	// 	http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
-	// 	return
-	// }
+	if alreadyLoggedIn(req) {
+		http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
+		return
+	}
 	fatalErr := tpl.ExecuteTemplate(res, "index.gohtml", nil)
 	if fatalErr != nil {
 		log.Println(fatalErr)
@@ -106,7 +125,22 @@ func indexPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func registerPage(res http.ResponseWriter, req *http.Request) {
+	if alreadyLoggedIn(req) {
+		http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
+		return
+	}
 	fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", nil)
+	if fatalErr != nil {
+		log.Println(fatalErr)
+	}
+}
+
+func dashboardPage(res http.ResponseWriter, req *http.Request) {
+	if !alreadyLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+	fatalErr := tpl.ExecuteTemplate(res, "dashboard.gohtml", nil)
 	if fatalErr != nil {
 		log.Println(fatalErr)
 	}

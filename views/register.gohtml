@@ -6,31 +6,36 @@
         function register(event) {
             var user = {
                 username: $("#username").val(),
-                type: $("#type").val(),
+                type: $("#type:checked").val(),
                 password: $("#password").val(),
                 confirmPassword: $("#confirmPassword").val(),
                 name: $("#name").val(),
             }
             $('#responseMessage').html("");
 
-            if (course.course_id == "") {
-                $('#responseMessage').html("<b style='color:red'>Sorry the course info is incomplete</b>");
+            if (user.username == "") {
+                $('#responseMessage').html("<b style='color:red'>Sorry the user info is incomplete</b>");
                 return
             }
+
             event.preventDefault();
             $.ajax({
                 url: 'register',
                 type: 'post',
                 dataType: 'json',
                 contentType: 'application/json',
+                data: JSON.stringify(user),
                 success: function (response) {
-                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+"</b>");
-                    $("#courseForm").trigger("reset"); 
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to login...</b>");
+                    $("#register input").prop("disabled", true);
+                    function pageRedirect() {
+                        window.location.replace("/");
+                    } 
+                    setTimeout(pageRedirect, 3000);
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
                 },
-                data: JSON.stringify(course)
             });
         }
     </script>
@@ -41,10 +46,8 @@
     <body style="text-align: center;">
         <h1>Create New Account</h1>
         <h3>Enter the following to create a new account</h3>
-        {{if .Message}}
-            <h4 style="color:red">{{.Message}}</h4>
-        {{end}}
-        <form method="post">
+        <div id="responseMessage"></div><br/>
+        <form id="register" method="post">
             <label for ="type">Register as:</label><br>
             <input type="radio" id="type" name="type" value="lecturer" required><label for="lecturer">Lecturer</label>
             <input type="radio" id="type" name="type" value="student" required><label for="student">Student</label><br><br>
