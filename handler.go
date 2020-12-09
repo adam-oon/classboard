@@ -125,24 +125,19 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			// validate question
-			// question := strings.Replace(questionJSON.Question, ",", " ", -1)
-			// question = strings.TrimSpace(question)
-			// questionJSON.Question = strings.Replace(question, " ", ",", -1)
-			questionSlice := strings.Split(questionJSON.Question, ",")
-			var sanitizeQuestionSlice []string
+			choiceSlice := strings.Split(questionJSON.Choice, ",")
+			var sanitizeChoiceSlice []string
 			var hasSolution bool
-			for _, v := range questionSlice {
-				if v != " " {
-					sanitizeQuestionSlice = append(sanitizeQuestionSlice, v)
+			for _, v := range choiceSlice {
+				v = strings.TrimSpace(v)
+				if v != "" {
+					sanitizeChoiceSlice = append(sanitizeChoiceSlice, v)
 				}
-
-				if questionJSON.Solution == v {
+				if strings.TrimSpace(questionJSON.Solution) == v {
 					hasSolution = true
 				}
 			}
-
-			questionJSON.Question = strings.Join(sanitizeQuestionSlice, ",")
+			questionJSON.Choice = strings.Join(sanitizeChoiceSlice, ",")
 
 			if !hasSolution {
 				res.WriteHeader(http.StatusUnprocessableEntity)
@@ -263,22 +258,31 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	params := mux.Vars(req)
+
 	// lecturer
-	// myCookie, err := req.Cookie("myCookie")
-	// if err != nil {
-	// 	res.WriteHeader(http.StatusUnprocessableEntity)
-	// 	json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
-	// 	return
-	// }
+	myCookie, err := req.Cookie("myCookie")
+	if err != nil {
+		//error//
+	}
 
-	// sessionModel := models.SessionModel{
-	// 	Db: db,
-	// }
-	// lecturer_id := sessionModel.GetUserID(myCookie.Value)
-	// classrooms := models.GetClassroomsByUserId(lecturer_id)
-	// //student
+	sessionModel := models.SessionModel{
+		Db: db,
+	}
+	lecturer_id := sessionModel.GetUserID(myCookie.Value)
+	owner_id := models.GetClassroomOwner(params["classroom_id"])
+	if lecturer_id != owner_id {
+		fatalErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
+		if fatalErr != nil {
+			log.Println(fatalErr)
+		}
+	}
 
-	fatalErr := tpl.ExecuteTemplate(res, "question.gohtml", nil)
+	questions := models.GetQuestionsByClassroomId(params["classroom_id"])
+
+	// student
+
+	fatalErr := tpl.ExecuteTemplate(res, "question.gohtml", questions)
 	if fatalErr != nil {
 		log.Println(fatalErr)
 	}
@@ -294,4 +298,27 @@ func addQuestionPage(res http.ResponseWriter, req *http.Request) {
 	if fatalErr != nil {
 		log.Println(fatalErr)
 	}
+}
+
+func questionHandler(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+	// params := mux.Vars(req)
+
+	// myCookie, err := req.Cookie("myCookie")
+	// if err != nil {
+	// 	res.WriteHeader(http.StatusUnprocessableEntity)
+	// 	json.NewEncoder(res).Encode(ResMessage{ResponseText: "Invalid User"})
+	// 	return
+	// }
+
+	// switch req.Method {
+	// case "DELETE":
+	// 	// delete student answer, delete question
+	// 	sessionModel := models.SessionModel{
+	// 		Db: db,
+	// 	}
+	// 	user_id := sessionModel.GetUserID(myCookie.Value)
+
+	// }
+
 }

@@ -42,3 +42,26 @@ func SaveQuestion(question QuestionInput) error {
 	}
 	return nil
 }
+
+func GetQuestionsByClassroomId(classroom_id string) []Question {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	var questions []Question
+	rows, err := db.Query("SELECT * from questions WHERE classroom_id = ?", classroom_id)
+	defer rows.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for rows.Next() {
+		var question Question
+		err := rows.Scan(&question.Id, &question.Classroom_id, &question.Question, &question.Type, &question.Choice, &question.Solution)
+		if err != nil {
+			panic(err.Error())
+		}
+		questions = append(questions, question)
+	}
+
+	return questions
+}

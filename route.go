@@ -20,6 +20,7 @@ func router() *mux.Router {
 	router.HandleFunc("/api/v1/classroom", addClassroomHandler).Methods("POST")
 	router.HandleFunc("/api/v1/classroom/{classroom_id}", classroomHandler).Methods("DELETE")
 	router.HandleFunc("/api/v1/{classroom_id}/question", addQuestionHandler).Methods("POST")
+	router.HandleFunc("/api/v1/{classroom_id}/question/{question_id}", questionHandler).Methods("DELETE")
 
 	return router
 }

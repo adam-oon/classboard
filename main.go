@@ -2,6 +2,7 @@ package main
 
 import (
 	"classboard/config"
+	"classboard/pkg/helper"
 	"database/sql"
 	"log"
 	"net/http"
@@ -21,7 +22,11 @@ const (
 )
 
 func main() {
-	tpl = template.Must(template.ParseGlob("views/*.gohtml"))
+	// predefined functions for template
+	fMap := template.FuncMap{
+		"inc": helper.Inc,
+	}
+	tpl = template.Must(template.New("").Funcs(fMap).ParseGlob("views/*.gohtml"))
 
 	// initialize env file
 	if err := godotenv.Load(".env"); err != nil {
