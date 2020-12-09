@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script>
+
+        function addClassroom(event) {
+            var classroom = {
+                code: $("#code").val(),
+                title: $("#title").val(),
+            }
+            $('#responseMessage').html("");
+
+            event.preventDefault();
+            $.ajax({
+                url: 'https://localhost:8080/api/v1/classroom',
+                type: 'post',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(classroom),
+                success: function (response) {
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
+                    $("#classroom_add input").prop("disabled", true);
+                    function pageRedirect() {
+                        window.location.replace("/");
+                    } 
+                    setTimeout(pageRedirect, 2000);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
+                },
+            });
+        }
+
+        
+    </script>
+    <head>
+        <meta charset="UTF-8">
+        <title>Welcome to the ClassBoard</title>
+    </head>
+
+    <body style="text-align: center;">
+
+        <h1><u>Add Classroom</u></h1>
+        <div id="responseMessage"></div><br/>
+
+        <form id="classroom_add" method="post">
+            <label for ="code">Classroom Code:</label><br>
+            <input type="text" id="code" name="code" placeholder="code" required><br><br>
+            <label for ="title">Classroom Title:</label><br>
+            <input type="text" id="title" name="title" placeholder="title" required><br><br>
+            <input type="submit" value="Add Classroom!" onclick="addClassroom(event)">
+        </form>
+        {{template "bottom_nav"}}
+    </body>
+</html>

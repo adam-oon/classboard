@@ -1,8 +1,8 @@
 package main
 
 import (
-	"classboard/helper"
 	"classboard/models"
+	"classboard/pkg/helper"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -37,12 +37,6 @@ type UserLogin struct {
 type ResMessage struct {
 	ResponseText string
 	ID           string
-}
-
-func sanitizeUserInput(user *User) {
-	user.Username = strings.TrimSpace(user.Username)
-	user.Type = strings.TrimSpace(user.Type)
-	user.Name = strings.TrimSpace(user.Name)
 }
 
 func register(res http.ResponseWriter, req *http.Request) {
@@ -187,7 +181,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		sessionModel := models.SessionModel{
 			Db: db,
 		}
-		sessionModel.DeleteSession(user.Username)
+		sessionModel.DeleteSession(user.Id)
 
 		// create session
 		id, _ := uuid.NewV4()
@@ -201,15 +195,14 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 		http.SetCookie(res, myCookie)
 
-		query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, username) VALUES ('%s','%s')",
-			myCookie.Value, user.Username)
+		query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, user_id) VALUES ('%s',%d)",
+			myCookie.Value, user.Id)
 		_, errExec := db.Exec(query)
 		if errExec != nil {
 			panic(errExec.Error())
 		}
 		res.WriteHeader(http.StatusOK)
 		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Course doesn't exist"})
-		// dashboardPage(res, req)
 	}
 }
 
@@ -233,4 +226,10 @@ func logout(res http.ResponseWriter, req *http.Request) {
 	}
 	http.SetCookie(res, myCookie)
 	http.Redirect(res, req, "/", http.StatusSeeOther)
+}
+
+func sanitizeUserInput(user *User) {
+	user.Username = strings.TrimSpace(user.Username)
+	user.Type = strings.TrimSpace(user.Type)
+	user.Name = strings.TrimSpace(user.Name)
 }

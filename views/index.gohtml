@@ -21,6 +21,7 @@
                     location.reload()
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
+                console.log(XMLHttpRequest)
                     $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
                 },
             });

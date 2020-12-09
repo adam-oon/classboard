@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script>
+
+        function addQuestion(event) {
+            var classroom = {
+                question: $("#question").val(),    
+                type: "multiple",
+                choice: $("#choice").val(),
+                solution: $("#solution").val(),
+            }
+            $('#responseMessage').html("");
+
+            event.preventDefault();
+            $.ajax({
+                url: "https://localhost:8080/api/v1/{{.}}/question",
+                type: 'post',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(classroom),
+                success: function (response) {
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
+                    $("#classroom_add input").prop("disabled", true);
+                    function pageRedirect() {
+                        window.location.replace("/");
+                    } 
+                    setTimeout(pageRedirect, 2000);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
+                },
+            });
+        }
+
+        
+    </script>
+    <head>
+        <meta charset="UTF-8">
+        <title>Welcome to the ClassBoard</title>
+    </head>
+
+    <body style="text-align: center;">
+
+        <h1><u>Add Question</u></h1>
+        <div id="responseMessage"></div><br/>
+{{.}}
+        <form id="classroom_add" method="post">
+            <label for ="question">Question:</label><br>
+            <textarea id="question" name="question" rows="4" cols="50" placeholder="eg. Which of the following is not programming language?" required></textarea><br><br>
+            
+            <label for ="choice">Choice:</label><br>
+            <textarea id="choice" name="choice" placeholder="eg. go,php,html" required></textarea><br><br>
+
+            <label for ="solution">Solution:</label><br>
+            <textarea id="solution" name="solution" placeholder="eg. html" required></textarea><br><br>
+            
+            <input type="submit" value="Add !" onclick="addQuestion(event)">
+        </form>
+        {{template "bottom_nav"}}
+    </body>
+</html>

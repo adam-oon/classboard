@@ -32,11 +32,10 @@
         <div id="responseMessage"></div><br/>
 
         {{if .}}
-        <a href="/classroom/add"><i>Add new classroom</i></a>
+        <a href="/add"><i>Add new question</i></a>
         <table style="margin-left:auto;margin-right:auto">
             <tr>
                 <th>ID</th>
-                <th>Code</th>
                 <th>Title</th>
                 <th></th>
                 <th></th>
@@ -45,15 +44,14 @@
             {{range $key, $val := .}}
             <tr>
                 <td>{{$val.Id}}</td>
-                <td>{{$val.Code}}</td>
                 <td>{{$val.Title}}</td>
                 <td>&nbsp;<a href="/classroom/{{$val.Id}}/question"><i>Questions</i></a>&nbsp;</td>
-                <td>&nbsp;<a href="/courses" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td>
+                <td>&nbsp;<a href="/classroom/{{$val.Id}}/question" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td>
             </tr>
             {{end}}
         </table>
         {{else}}
-        <h4>There is no classroom here! Please <a href="/classroom/add">add a classroom</a> first!</h4>
+        <h4>There is no question here! Please <a href="question/add" target="_self">add a question</a> first!</h4>
         {{end}}
 
         {{template "bottom_nav"}}

@@ -6,7 +6,7 @@ import (
 )
 
 type User struct {
-	Id       string
+	Id       int
 	Username string
 	Password string
 	Type     string
@@ -15,10 +15,6 @@ type User struct {
 
 type UserModel struct {
 	Db *sql.DB
-}
-
-func CheckUser(session_id string) {
-
 }
 
 func (userModel UserModel) GetUser(username string) User {
