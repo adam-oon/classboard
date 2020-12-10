@@ -32,9 +32,7 @@ func SaveQuestion(question QuestionInput) error {
 	db := config.GetMySQLDB()
 	defer db.Close()
 
-	query := fmt.Sprintf("INSERT INTO questions (classroom_id, question, type,choice, solution) VALUES ('%s','%s','%s','%s','%s')",
-		question.Classroom_id, question.Question, question.Type, question.Choice, question.Solution)
-	_, err := db.Exec(query)
+	_, err := db.Exec("INSERT INTO questions (classroom_id, question, type,choice, solution) VALUES (?,?,?,?,?)", question.Classroom_id, question.Question, question.Type, question.Choice, question.Solution)
 
 	if err != nil {
 		fmt.Println(err)

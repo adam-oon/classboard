@@ -3,7 +3,6 @@ package main
 import (
 	"classboard/models"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -358,7 +357,6 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method == http.MethodPost {
 		classroom_id := params["classroom_id"]
-		fmt.Println(classroom_id)
 
 		err = models.JoinClass(user_id, classroom_id)
 		if err != nil {

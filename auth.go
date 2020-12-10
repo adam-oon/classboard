@@ -4,7 +4,6 @@ import (
 	"classboard/models"
 	"classboard/pkg/helper"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -120,9 +119,7 @@ func register(res http.ResponseWriter, req *http.Request) {
 
 				var errExec error
 				// store new user info
-				query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".users ( username, password, type, name) VALUES ('%s', '%s', '%s','%s')",
-					newUser.Username, newUser.Password, newUser.Type, newUser.Name)
-				_, errExec = db.Exec(query)
+				_, errExec = db.Exec("INSERT INTO "+os.Getenv("DB_SCHEMA")+".users ( username, password, type, name) VALUES (?, ?, ?,?)", newUser.Username, newUser.Password, newUser.Type, newUser.Name)
 
 				if errExec != nil {
 					panic(errExec.Error())
@@ -195,9 +192,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 		http.SetCookie(res, myCookie)
 
-		query := fmt.Sprintf("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, user_id) VALUES ('%s',%d)",
-			myCookie.Value, user.Id)
-		_, errExec := db.Exec(query)
+		_, errExec := db.Exec("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, user_id) VALUES (?,?)", myCookie.Value, user.Id)
 		if errExec != nil {
 			panic(errExec.Error())
 		}

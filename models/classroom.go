@@ -72,9 +72,7 @@ func SaveClassroom(classroom Classroom) error {
 	db := config.GetMySQLDB()
 	defer db.Close()
 
-	query := fmt.Sprintf("INSERT INTO classrooms (id, user_id, title, code) VALUES ('%s', %d, '%s', '%s')",
-		classroom.Id, classroom.User_id, classroom.Title, classroom.Code)
-	_, err := db.Exec(query)
+	_, err := db.Exec("INSERT INTO classrooms (id, user_id, title, code) VALUES (?, ?, ?, ?)", classroom.Id, classroom.User_id, classroom.Title, classroom.Code)
 
 	if err != nil {
 		fmt.Println(err)
