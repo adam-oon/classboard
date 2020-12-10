@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script>
+
+        function joinClassroom(event) {
+            $('#responseMessage').html("");
+
+            event.preventDefault();
+            $.ajax({
+                url: 'https://localhost:8080/api/v1/user_class/'+ $("#classroom_id").val(),
+                type: 'post',
+                success: function (response) {
+                console.log(response)
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
+                    $("#classroom_join input").prop("disabled", true);
+                    function pageRedirect() {
+                        window.location.replace("/");
+                    } 
+                    setTimeout(pageRedirect, 2000);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                console.log(XMLHttpRequest)
+                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
+                },
+            });
+        }
+
+        
+    </script>
+    <head>
+        <meta charset="UTF-8">
+        <title>Welcome to the ClassBoard</title>
+    </head>
+
+    <body style="text-align: center;">
+
+        <h1><u>Join Classroom</u></h1>
+        <div id="responseMessage"></div><br/>
+
+        <form id="classroom_join" method="post">
+            <label for ="classroom_id">Classroom Id:</label><br>
+            <input type="text" id="classroom_id" name="classroom_id" size="35" placeholder="Insert classroom ID here" required><br><br>
+            <input type="submit" value="Join Classroom!" onclick="joinClassroom(event)">
+        </form>
+        {{template "bottom_nav"}}
+    </body>
+</html>

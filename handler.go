@@ -3,6 +3,7 @@ package main
 import (
 	"classboard/models"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -88,7 +89,7 @@ func addClassroomHandler(res http.ResponseWriter, req *http.Request) {
 
 func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req) //
+	params := mux.Vars(req)
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -220,7 +221,6 @@ func dashboardPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// lecturer
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -231,11 +231,30 @@ func dashboardPage(res http.ResponseWriter, req *http.Request) {
 	sessionModel := models.SessionModel{
 		Db: db,
 	}
-	lecturer_id := sessionModel.GetUserID(myCookie.Value)
-	classrooms := models.GetClassroomsByUserId(lecturer_id)
-	//student
+	user_id := sessionModel.GetUserID(myCookie.Value)
 
-	fatalErr := tpl.ExecuteTemplate(res, "dashboard.gohtml", classrooms)
+	userModel := models.UserModel{
+		Db: db,
+	}
+	user := userModel.GetUser(user_id)
+
+	var classrooms []models.Classroom
+	switch user.Type {
+	case "lecturer":
+		classrooms = models.GetClassroomsByUserId(user_id)
+	case "student":
+		classrooms = models.GetJoinedClass(user_id)
+	}
+
+	data := struct {
+		User      models.User
+		Classroom []models.Classroom
+	}{
+		user,
+		classrooms,
+	}
+
+	fatalErr := tpl.ExecuteTemplate(res, "dashboard.gohtml", data)
 	if fatalErr != nil {
 		log.Println(fatalErr)
 	}
@@ -247,6 +266,17 @@ func addClassroomPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fatalErr := tpl.ExecuteTemplate(res, "classroom_add.gohtml", nil)
+	if fatalErr != nil {
+		log.Println(fatalErr)
+	}
+}
+
+func joinClassroomPage(res http.ResponseWriter, req *http.Request) {
+	if !alreadyLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+	fatalErr := tpl.ExecuteTemplate(res, "classroom_join.gohtml", nil)
 	if fatalErr != nil {
 		log.Println(fatalErr)
 	}
@@ -276,6 +306,7 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 		if fatalErr != nil {
 			log.Println(fatalErr)
 		}
+		return
 	}
 
 	questions := models.GetQuestionsByClassroomId(params["classroom_id"])
@@ -297,6 +328,65 @@ func addQuestionPage(res http.ResponseWriter, req *http.Request) {
 	fatalErr := tpl.ExecuteTemplate(res, "question_add.gohtml", params["classroom_id"])
 	if fatalErr != nil {
 		log.Println(fatalErr)
+	}
+}
+
+func joinClassHandler(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
+	myCookie, err := req.Cookie("myCookie")
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+		return
+	}
+
+	sessionModel := models.SessionModel{
+		Db: db,
+	}
+	user_id := sessionModel.GetUserID(myCookie.Value)
+	userModel := models.UserModel{
+		Db: db,
+	}
+	user := userModel.GetUser(user_id)
+
+	if user.Type == "lecturer" {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Forbidden Action"})
+		return
+	}
+
+	if req.Method == http.MethodPost {
+		classroom_id := params["classroom_id"]
+		fmt.Println(classroom_id)
+
+		err = models.JoinClass(user_id, classroom_id)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
+			return
+		} else {
+			res.WriteHeader(http.StatusCreated)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Class joined!"})
+		}
+
+		// reqBody, err := ioutil.ReadAll(req.Body)
+		// type QuestionJSON struct {
+		// 	Question string
+		// 	Type     string
+		// 	Choice   string
+		// 	Solution string
+		// }
+		// var questionJSON QuestionJSON
+		// if err == nil {
+		// 	err := json.Unmarshal(reqBody, &questionJSON)
+		// 	if err != nil {
+		// 		res.WriteHeader(http.StatusUnprocessableEntity)
+		// 		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+		// 		return
+		// 	}
+
+		// }
 	}
 }
 

@@ -21,6 +21,17 @@
             });
         }
     </script>
+    <style>
+        table, th, td {
+            border: 1.5px solid gray;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+        table {
+            margin-left: auto; 
+            margin-right: auto;
+        }
+    </style>
     <head>
         <meta charset="UTF-8">
         <title>Welcome to the ClassBoard</title>
@@ -31,18 +42,16 @@
         <h1><u>ClassBoard Dashboard</u></h1>
         <div id="responseMessage"></div><br/>
 
-        {{if .}}
-        <a href="/classroom/add"><i>Add new classroom</i></a>
-        <table style="margin-left:auto;margin-right:auto">
+        {{if .Classroom}}
+        
+        <table>
             <tr>
                 <th>ID</th>
                 <th>Code</th>
                 <th>Title</th>
-                <th></th>
-                <th></th>
-
+                <th colspan="2">Action</th>
             </tr>
-            {{range $key, $val := .}}
+            {{range $key, $val := .Classroom}}
             <tr>
                 <td>{{$val.Id}}</td>
                 <td>{{$val.Code}}</td>
@@ -51,6 +60,13 @@
                 <td>&nbsp;<a href="/courses" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td>
             </tr>
             {{end}}
+            <tr>
+                {{if eq .User.Type "lecturer"}}
+                <td colspan="5">+<a href="/classroom/add"><i>Add new classroom</i></a></td>
+                {{else if eq .User.Type "student" }}
+                <td colspan="5">+<a href="/classroom/join"><i> Join new classroom</i></a></td>
+                {{end}}
+            </tr>
         </table>
         {{else}}
         <h4>There is no classroom here! Please <a href="/classroom/add">add a classroom</a> first!</h4>

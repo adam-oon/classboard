@@ -162,7 +162,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		userModel := models.UserModel{
 			Db: db,
 		}
-		user := userModel.GetUser(userLogin.Username)
+		user := userModel.GetUserByUsername(userLogin.Username)
 		if user == (models.User{}) {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})

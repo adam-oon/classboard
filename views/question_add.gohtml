@@ -21,7 +21,7 @@
                 data: JSON.stringify(classroom),
                 success: function (response) {
                     $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
-                    $("#classroom_add input").prop("disabled", true);
+                    $("#question_add input").prop("disabled", true);
                     function pageRedirect() {
                         window.location.replace("/");
                     } 
@@ -45,7 +45,7 @@
         <h1><u>Add Question</u></h1>
         <div id="responseMessage"></div><br/>
 
-        <form id="classroom_add" method="post">
+        <form id="question_add" method="post">
             <label for ="question">Question:</label><br>
             <textarea id="question" name="question" rows="4" cols="50" placeholder="eg. Which of the following is not programming language?" required></textarea><br><br>
             
