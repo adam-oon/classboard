@@ -47,26 +47,47 @@ func GetClassroomsByUserId(user_id int) []Classroom {
 	return classrooms
 }
 
-func GetClassroomOwner(classroom_id string) int {
-	var user_id int
+func GetClassroom(classroom_id string) Classroom {
 	db := config.GetMySQLDB()
 	defer db.Close()
 
-	rows, err := db.Query("SELECT user_id from classrooms WHERE id = ?", classroom_id)
+	rows, err := db.Query("SELECT * from classrooms WHERE id = ?", classroom_id)
 	defer rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
 
+	var classroom Classroom
 	for rows.Next() {
-		err := rows.Scan(&user_id)
+		err := rows.Scan(&classroom.Id, &classroom.User_id, &classroom.Title, &classroom.Code)
 		if err != nil {
 			panic(err.Error())
 		}
 	}
 
-	return user_id
+	return classroom
 }
+
+// func GetClassroomOwner(classroom_id string) int {
+// 	var user_id int
+// 	db := config.GetMySQLDB()
+// 	defer db.Close()
+
+// 	rows, err := db.Query("SELECT user_id from classrooms WHERE id = ?", classroom_id)
+// 	defer rows.Close()
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+
+// 	for rows.Next() {
+// 		err := rows.Scan(&user_id)
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
+// 	}
+
+// 	return user_id
+// }
 
 func SaveClassroom(classroom Classroom) error {
 	db := config.GetMySQLDB()

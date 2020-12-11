@@ -24,7 +24,8 @@ const (
 func main() {
 	// predefined functions for template
 	fMap := template.FuncMap{
-		"inc": helper.Inc,
+		"inc":        helper.Inc,
+		"strToSlice": helper.StrToSlice,
 	}
 	tpl = template.Must(template.New("").Funcs(fMap).ParseGlob("views/*.gohtml"))
 

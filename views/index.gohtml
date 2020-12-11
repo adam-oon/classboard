@@ -2,7 +2,6 @@
 <html lang="en">
     {{ template "script"}}
     <script>
-
         function login(event) {
             var userLogin = {
                 username: $("#username").val(),
@@ -29,10 +28,7 @@
 
         
     </script>
-    <head>
-        <meta charset="UTF-8">
-        <title>Welcome to the ClassBoard</title>
-    </head>
+    {{ template "header"}}
 
     <body style="text-align: center;">
 

@@ -23,7 +23,7 @@
                     $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
                     $("#question_add input").prop("disabled", true);
                     function pageRedirect() {
-                        window.location.replace("/");
+                        window.location.replace("/classroom/{{.}}/question");
                     } 
                     setTimeout(pageRedirect, 2000);
                 },
@@ -35,10 +35,7 @@
 
         
     </script>
-    <head>
-        <meta charset="UTF-8">
-        <title>Welcome to the ClassBoard</title>
-    </head>
+    {{ template "header"}}
 
     <body style="text-align: center;">
 
@@ -50,13 +47,15 @@
             <textarea id="question" name="question" rows="4" cols="50" placeholder="eg. Which of the following is not programming language?" required></textarea><br><br>
             
             <label for ="choice">Choice:</label><br>
-            <textarea id="choice" name="choice" placeholder="eg. go,php,html" required></textarea><br><br>
+            <textarea id="choice" name="choice" placeholder="eg. go|php|html" required></textarea><br><br>
 
             <label for ="solution">Solution:</label><br>
             <textarea id="solution" name="solution" placeholder="eg. html" required></textarea><br><br>
             
             <input type="submit" value="Add !" onclick="addQuestion(event)">
         </form>
+        
+        <br><a href="../question">Back to question list</a>
         {{template "bottom_nav"}}
     </body>
 </html>

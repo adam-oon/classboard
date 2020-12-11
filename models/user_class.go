@@ -4,6 +4,7 @@ import (
 	"classboard/config"
 	"database/sql"
 	"errors"
+	"log"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -36,6 +37,30 @@ func JoinClass(user_id int, classroom_id string) error {
 	return nil
 }
 
+func GetClassroomStudent(classroom_id string) []int {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	rows, err := db.Query("SELECT user_id FROM user_classes WHERE classroom_id = ?", classroom_id)
+
+	if err != nil {
+		log.Panic("Failed to get classes")
+		// return errors.New("Failed to get classes")
+	}
+	var user_ids []int
+	for rows.Next() {
+		var user_id int
+		err := rows.Scan(&user_id)
+		if err != nil {
+			panic(err.Error())
+		}
+		user_ids = append(user_ids, user_id)
+	}
+
+	return user_ids
+
+}
+
 func GetJoinedClass(user_id int) []Classroom {
 	db := config.GetMySQLDB()
 	defer db.Close()
@@ -56,4 +81,28 @@ func GetJoinedClass(user_id int) []Classroom {
 	}
 
 	return userClasses
+}
+
+func IsBelongToClassroom(user_id int, classroom_id string) bool {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	rows, err := db.Query("SELECT COUNT(user_id) as totalUserID FROM user_classes WHERE user_id =  ? AND classroom_id = ?", user_id, classroom_id)
+
+	if err != nil {
+		// return errors.New("Failed to get classes")
+	}
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	if count > 0 {
+		return true
+	} else {
+		return false
+	}
 }

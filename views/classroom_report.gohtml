@@ -2,40 +2,19 @@
 <html lang="en">
     {{template "style"}}
     {{template "script"}}
-    <script>
-        function deleteCourse(event,id) {
-            event.preventDefault();
-            $('#responseMessage').html("");
-
-            $.ajax({
-                url: 'api/v1/classroom/'+id,
-                type: 'delete',
-                success: function (response) {
-                    if (response != undefined) {
-                        $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+"</b>");
-                    }
-                    location.reload()
-                },
-                error: function (XMLHttpRequest, textStatus, errorThrown) {
-                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
-                },
-            });
-        }
-    </script>
     
-    {{template "header"}}
+    {{ template "header"}}
 
     <body style="text-align: center;">
 
         <h1><u>ClassBoard Dashboard</u></h1>
-        {{template "user_bar" .}}
         <div id="responseMessage"></div><br/>
 
         {{if .Classroom}}
         
         <table>
             <tr>
-                <td colspan="5">Classroom List</td>
+                <td colspan="4">Classroom List</td>
             </tr>
             <tr>
                 <th>ID</th>
@@ -50,8 +29,7 @@
                 <td>{{$val.Title}}</td>
                 <td>&nbsp;<a href="/classroom/{{$val.Id}}/question"><i>Questions</i></a>&nbsp;</td>
                 {{if eq $.User.Type "lecturer"}}
-                {{/* <td>&nbsp;<a href="/classroom" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td> */}}
-                <td>&nbsp;<a href="/classroom/{{$val.Id}}/report"><i>Summary</i></a>&nbsp;</td>
+                <td>&nbsp;<a href="/courses" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td>
                 {{end}}
                 
             </tr>

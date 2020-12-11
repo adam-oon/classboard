@@ -2,13 +2,12 @@ package models
 
 import (
 	"classboard/config"
-	"database/sql"
 	"errors"
 	"fmt"
 )
 
 type Question struct {
-	Id           string
+	Id           int
 	Classroom_id string
 	Question     string
 	Type         string
@@ -22,10 +21,6 @@ type QuestionInput struct {
 	Type         string
 	Choice       string
 	Solution     string
-}
-
-type QuestionModel struct {
-	Db *sql.DB
 }
 
 func SaveQuestion(question QuestionInput) error {
@@ -62,4 +57,41 @@ func GetQuestionsByClassroomId(classroom_id string) []Question {
 	}
 
 	return questions
+}
+
+func GetQuestion(question_id int) Question {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	rows, err := db.Query("SELECT * from questions WHERE id = ?", question_id)
+	defer rows.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var question Question
+	for rows.Next() {
+		err := rows.Scan(&question.Id, &question.Classroom_id, &question.Question, &question.Type, &question.Choice, &question.Solution)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	return question
+}
+
+func DeleteQuestion(question_id int) error {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	result, err := db.Exec("DELETE FROM questions WHERE id =?", question_id)
+	if err != nil {
+		panic(err.Error()) // error//
+	}
+
+	if changed, _ := result.RowsAffected(); changed == 1 {
+		return nil
+	} else {
+		return errors.New("Question doesn't exist")
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // CheckPanic simplifies panic recover process.
@@ -60,7 +61,13 @@ func InArray(needle string, haystack []string) bool {
 	return false
 }
 
-// Inc increments integer by 1 .
+// Inc increments integer by 1.
 func Inc(target, interval int) int {
 	return target + interval
+}
+
+// StrToSlice convert string sentence to slice.
+func StrToSlice(src string, delimiter string) []string {
+	choiceSlice := strings.Split(src, delimiter)
+	return choiceSlice
 }

@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -15,10 +14,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type messageLog struct {
-	Message string
-}
 
 type User struct {
 	Username        string
@@ -36,6 +31,10 @@ type UserLogin struct {
 type ResMessage struct {
 	ResponseText string
 	ID           string
+}
+
+type messageLog struct {
+	Message string
 }
 
 func register(res http.ResponseWriter, req *http.Request) {
@@ -85,7 +84,7 @@ func register(res http.ResponseWriter, req *http.Request) {
 
 			var count int
 			// check user existence
-			rows, err := db.Query("SELECT COUNT(username) as totalUsername FROM "+os.Getenv("DB_SCHEMA")+".users WHERE username = ?", newUser.Username)
+			rows, err := db.Query("SELECT COUNT(username) as totalUsername FROM users WHERE username = ?", newUser.Username)
 			defer rows.Close()
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
@@ -119,7 +118,7 @@ func register(res http.ResponseWriter, req *http.Request) {
 
 				var errExec error
 				// store new user info
-				_, errExec = db.Exec("INSERT INTO "+os.Getenv("DB_SCHEMA")+".users ( username, password, type, name) VALUES (?, ?, ?,?)", newUser.Username, newUser.Password, newUser.Type, newUser.Name)
+				_, errExec = db.Exec("INSERT INTO users ( username, password, type, name) VALUES (?, ?, ?,?)", newUser.Username, newUser.Password, newUser.Type, newUser.Name)
 
 				if errExec != nil {
 					panic(errExec.Error())
@@ -192,7 +191,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 		http.SetCookie(res, myCookie)
 
-		_, errExec := db.Exec("INSERT INTO "+os.Getenv("DB_SCHEMA")+".sessions (session_id, user_id) VALUES (?,?)", myCookie.Value, user.Id)
+		_, errExec := db.Exec("INSERT INTO sessions (session_id, user_id) VALUES (?,?)", myCookie.Value, user.Id)
 		if errExec != nil {
 			panic(errExec.Error())
 		}
@@ -227,4 +226,33 @@ func sanitizeUserInput(user *User) {
 	user.Username = strings.TrimSpace(user.Username)
 	user.Type = strings.TrimSpace(user.Type)
 	user.Name = strings.TrimSpace(user.Name)
+}
+
+func getUser(req *http.Request) models.User {
+	myCookie, err := req.Cookie("myCookie")
+	if err != nil {
+		//error//
+	}
+
+	sessionModel := models.SessionModel{
+		Db: db,
+	}
+	user_id := sessionModel.GetUserID(myCookie.Value)
+	userModel := models.UserModel{
+		Db: db,
+	}
+	user := userModel.GetUser(user_id)
+	return user
+}
+
+func alreadyLoggedIn(req *http.Request) bool {
+	myCookie, err := req.Cookie("myCookie")
+	if err != nil {
+		return false
+	}
+	sessionModel := models.SessionModel{
+		Db: db,
+	}
+	ok := sessionModel.CheckSession(myCookie.Value)
+	return ok
 }

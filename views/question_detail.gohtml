@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+    {{template "style"}}
+    {{template "script"}}
+
+    {{ template "header"}}
+
+    <body style="text-align: center;">
+
+        <h1><u>ClassBoard Dashboard</u></h1>
+        <div id="responseMessage"></div><br/>
+
+        {{if .}}
+        {{$choice := strToSlice .Choice "|"}}
+        {{$length := len $choice}}
+        <form id="answer" method="post">
+            <table>
+                {{$length := len $choice}}
+                <tr>
+                    <th colspan="{{$length}}">Question:</th>
+                </tr>
+                <tr>
+                    <td colspan="{{$length}}">{{.Question}}</td>
+                </tr>
+
+                <tr>
+                    <th colspan="{{$length}}">Choice:</th>
+                </tr>
+                <tr>
+                {{range $key, $val :=  $choice}}
+                    <td>{{$val}}</td>
+                {{end}}
+                </tr>
+
+                <tr>
+                    <th colspan="{{$length}}">Solution:</th>
+                </tr>
+                <tr>
+                    <td colspan="{{$length}}">{{.Solution}}</td>
+                </tr>
+            </table>
+            <br>
+        </form>
+        {{end}}
+        
+        <br><a href="../question">Back to question list</a>
+        {{template "bottom_nav"}}
+    </body>
+</html>

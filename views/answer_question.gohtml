@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+    {{template "style"}}
+    {{template "script"}}
+    <script>
+        function submitAnswer(event) {
+            event.preventDefault();
+            $('#responseMessage').html("");
+
+            if ( $("#answer:checked").val() == undefined) {
+                $('#responseMessage').html("<b style='color:red'>Please choose an answer!</b>")
+                return
+            }  
+
+            var answer = {
+                question_id: {{.Id}},
+                answer: $("#answer:checked").val(),
+            }
+            
+            $.ajax({
+                url: 'https://localhost:8080/api/v1/answer',
+                type: 'post',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(answer),
+                success: function (response) {
+                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
+                    $("#answer input").prop("disabled", true);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
+                },
+            });
+        }
+    </script>
+    {{ template "header"}}
+
+    <body style="text-align: center;">
+
+        <h1><u>Question</u></h1>
+        <div id="responseMessage"></div><br/>
+
+        {{if .}}
+        {{$choice := strToSlice .Choice "|"}}
+        <form id="answer" method="post">
+            <table>
+                <tr>
+                    <th colspan="{{len $choice}}">Question:</th>
+                </tr>
+                <tr>
+                    <td colspan="{{len $choice}}">{{.Question}}</td>
+                </tr>
+
+                <tr>
+                {{range $key, $val :=  $choice}}
+                    <td><input type="radio" id="answer" name="answer" value="{{$val}}" required>{{$val}}</td>
+                {{end}}
+                </tr>
+            </table>
+            <br>
+            <input type="submit" value="Submit Answer!" onclick="submitAnswer(event)">
+        </form>
+        {{end}}
+        
+        <br><a href="../question">Back to question list</a>
+        {{template "bottom_nav"}}
+    </body>
+</html>

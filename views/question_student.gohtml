@@ -3,12 +3,12 @@
     {{template "style"}}
     {{template "script"}}
     <script>
-        function deleteQuestion(event,id) {
+        function getQuestion(event,id) {
             event.preventDefault();
             $('#responseMessage').html("");
 
             $.ajax({
-                url: 'https://localhost:8080/api/v1/{{.Classroom.Id}}/question/'+id,
+                url: 'api/v1/classroom/'+id,
                 type: 'delete',
                 success: function (response) {
                     if (response != undefined) {
@@ -22,6 +22,7 @@
             });
         }
     </script>
+    
     {{ template "header"}}
 
     <body style="text-align: center;">
@@ -37,23 +38,21 @@
             <tr>
                 <th>No.</th>
                 <th>Question</th>
-                <th colspan="2">Action</th>
+                <th>Action</th>
+                <th>Status</th>
+
             </tr>
             {{range $key, $val := .Questions}}
             <tr>
-            
                 <td>{{inc $key 1}}</td>
                 <td>{{$val.Question}}</td>
                 <td>&nbsp;<a href="/classroom/{{$.Classroom.Id}}/question/{{$val.Id}}"><i>Detail</i></a>&nbsp;</td>
-                <td>&nbsp;<a href="#" onclick="deleteQuestion(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td>
+                <td></td>
             </tr>
             {{end}}
-            <tr>
-                <td colspan="4">+<a href="question/add"><i>Add new question</i></a></td>
-            </tr>
         </table>
         {{else}}
-        <h4>There is no question here! Please <a href="question/add">add a question</a> first!</h4>
+        <h4>Currently there is no question in this classroom!</h4>
         {{end}}
 
         {{template "bottom_nav"}}
