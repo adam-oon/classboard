@@ -13,7 +13,7 @@
             }  
 
             var answer = {
-                question_id: {{.Id}},
+                question_id: {{.Question.Id}},
                 answer: $("#answer:checked").val(),
             }
             
@@ -24,7 +24,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify(answer),
                 success: function (response) {
-                    $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
+                    $('#responseMessage').html("<b style='color:blue'>"+response.ResponseText+"</b>");
                     $("#answer input").prop("disabled", true);
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
@@ -39,16 +39,43 @@
 
         <h1><u>Question</u></h1>
         <div id="responseMessage"></div><br/>
+        
+        {{if eq .IsAnswered true}}
 
-        {{if .}}
-        {{$choice := strToSlice .Choice "|"}}
+        {{if .Question}}
+        {{$choice := strToSlice .Question.Choice "|"}}
         <form id="answer" method="post">
             <table>
                 <tr>
                     <th colspan="{{len $choice}}">Question:</th>
                 </tr>
                 <tr>
-                    <td colspan="{{len $choice}}">{{.Question}}</td>
+                    <td colspan="{{len $choice}}">{{.Question.Question}}</td>
+                </tr>
+                <tr>
+                    <th>Correct Answer:</th>
+                    <th>Your Answer:</th>
+                </tr>
+                <tr>
+                    <td>{{.Question.Solution}}</td>
+                    <td>{{.Answer.Answer}} {{if eq .Answer.Is_correct true}}<b style='color:green'>&#10004</b>{{else}}<b style='color:red'>&#10006</b>{{end}}</td>
+                </tr>
+            </table>
+            <br>
+        </form>
+        {{end}}
+        
+        {{else}}
+
+        {{if .Question}}
+        {{$choice := strToSlice .Question.Choice "|"}}
+        <form id="answer" method="post">
+            <table>
+                <tr>
+                    <th colspan="{{len $choice}}">Question:</th>
+                </tr>
+                <tr>
+                    <td colspan="{{len $choice}}">{{.Question.Question}}</td>
                 </tr>
 
                 <tr>
@@ -61,6 +88,10 @@
             <input type="submit" value="Submit Answer!" onclick="submitAnswer(event)">
         </form>
         {{end}}
+
+        {{end}}
+
+        
         
         <br><a href="../question">Back to question list</a>
         {{template "bottom_nav"}}

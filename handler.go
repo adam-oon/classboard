@@ -424,17 +424,45 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var template string
 	if user.Type == "lecturer" {
-		template = "question_detail.gohtml"
+		fatalErr := tpl.ExecuteTemplate(res, "question_detail.gohtml", question)
+		if fatalErr != nil {
+			Warning.Println(fatalErr)
+		}
 	} else if user.Type == "student" {
-		// answer, err := models.GetAnswer(question_id, user.Id)
-		template = "answer_question.gohtml"
-	}
+		answer, err := models.GetAnswer(question_id, user.Id)
+		if err != nil {
+			Warning.Println(err)
+		}
 
-	fatalErr := tpl.ExecuteTemplate(res, template, question)
-	if fatalErr != nil {
-		Warning.Println(fatalErr)
+		var fatalErr error
+		if answer != nil { // already answered
+			data := struct {
+				Question   models.Question
+				IsAnswered bool
+				Answer     models.Answer
+			}{
+				question,
+				true,
+				*answer,
+			}
+			fatalErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
+		} else {
+			data := struct { // not yet answer
+				Question   models.Question
+				IsAnswered bool
+				Answer     models.Answer
+			}{
+				question,
+				false,
+				models.Answer{},
+			}
+			fatalErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
+		}
+
+		if fatalErr != nil {
+			Warning.Println(fatalErr)
+		}
 	}
 }
 

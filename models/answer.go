@@ -30,24 +30,22 @@ func SaveAnswer(answer Answer) error {
 	return nil
 }
 
-func GetAnswer(question_id int, user_id int) (Answer, error) {
+func GetAnswer(question_id int, user_id int) (*Answer, error) {
 	db := config.GetMySQLDB()
 	defer db.Close()
 
 	var answer Answer
-	rows, err := db.Query("SELECT * from answer WHERE question_id = ? AND user_id = ?", question_id, user_id)
-	defer rows.Close()
-	if err != nil {
-		return answer, err
+	row := db.QueryRow("SELECT * from answers WHERE question_id = ? AND user_id = ?", question_id, user_id)
+	err := row.Scan(&answer.Question_id, &answer.User_id, &answer.Answer, &answer.Is_correct)
+	switch err {
+	case sql.ErrNoRows:
+		return nil, nil
+	case nil:
+		pointer_answer := &answer
+		return pointer_answer, nil
+	default:
+		return nil, err
 	}
-
-	for rows.Next() {
-		err := rows.Scan(&answer.Question_id, &answer.User_id, &answer.Answer, &answer.Is_correct)
-		if err != nil {
-			return answer, err
-		}
-	}
-	return answer, nil
 }
 
 func DeleteAnswer(question_id int) error {
