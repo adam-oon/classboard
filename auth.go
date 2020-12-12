@@ -155,10 +155,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		userModel := models.UserModel{
-			Db: db,
-		}
-		user := userModel.GetUserByUsername(userLogin.Username)
+		user := models.GetUserByUsername(userLogin.Username)
 		if user == (models.User{}) {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
@@ -174,10 +171,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// check user session and delete it
-		sessionModel := models.SessionModel{
-			Db: db,
-		}
-		sessionModel.DeleteSession(user.Id)
+		models.DeleteSession(user.Id)
 
 		// create session
 		id, _ := uuid.NewV4()
@@ -208,10 +202,7 @@ func logout(res http.ResponseWriter, req *http.Request) {
 
 	myCookie, _ := req.Cookie("myCookie")
 	// delete the session
-	sessionModel := models.SessionModel{
-		Db: db,
-	}
-	sessionModel.DeleteSessionByID(myCookie.Value)
+	models.DeleteSessionByID(myCookie.Value)
 	// remove the cookie
 	myCookie = &http.Cookie{
 		Name:   "myCookie",
@@ -234,15 +225,17 @@ func getUser(req *http.Request) models.User {
 		//error//
 	}
 
-	sessionModel := models.SessionModel{
-		Db: db,
-	}
-	user_id := sessionModel.GetUserID(myCookie.Value)
-	userModel := models.UserModel{
-		Db: db,
-	}
-	user := userModel.GetUser(user_id)
+	user_id := models.GetUserID(myCookie.Value)
+	user := models.GetUser(user_id)
 	return user
+}
+
+func isLecturer(user_type string) bool {
+	return user_type == "lecturer"
+}
+
+func isStudent(user_type string) bool {
+	return user_type == "student"
 }
 
 func alreadyLoggedIn(req *http.Request) bool {
@@ -250,9 +243,7 @@ func alreadyLoggedIn(req *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	sessionModel := models.SessionModel{
-		Db: db,
-	}
-	ok := sessionModel.CheckSession(myCookie.Value)
+
+	ok := models.CheckSession(myCookie.Value)
 	return ok
 }

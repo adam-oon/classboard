@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+    {{template "style"}}
+    {{template "script"}}
+    
+    {{ template "header"}}
+
+    <body style="text-align: center;">
+
+        <h1><u>{{.Classroom.Code}} Summary</u></h1>
+        <div id="responseMessage"></div><br/>
+
+        {{if .}}
+
+        {{if .Summary}}
+        <table>
+            <tr>
+                <th>Total Student:</th>
+                <th>Total Question:</th>
+            </tr>
+            <tr>
+                <td>{{.Summary.StudentTotal}}</td>
+                <td>{{.Summary.QuestionTotal}}</td>
+            </tr>
+
+            <tr>
+                <th>Question Participation:</th>
+                <th>Question Correctness:</th>
+            </tr>
+            <tr>
+                <td>{{.Summary.Participation}}%</td>
+                <td>{{.Summary.Correctness}}%</td>
+            </tr>
+        </table>
+        {{end}}
+        
+        <br><br>
+        <table>
+            <tr>
+                <td colspan="{{inc (len .Questions) 1}}">Result</td>
+            </tr>
+            <tr>
+                <th>Student</th>
+                {{range $i, $question := .Questions}}
+                <th>Q{{inc $i 1}}</th>
+                {{end}}
+            </tr>
+            {{range $student, $answer := .Result.Item}}
+            <tr>
+                <td>{{$student}}</td>
+                {{ range $i, $question := $.Questions}} 
+                    {{$result := index $answer.Item $question.Id}}
+                    <td>
+                    {{if eq $result 1}}
+                    <b style='color:green'>&#10004</b>
+                    {{else if eq $result -1}}
+                    <b style='color:red'>&#10006</b>
+                    {{else if eq $result 0}}
+                    <b style='color:blue'>?</b>
+                    {{end}}
+                    </td>
+                {{end}}
+            </tr>
+            {{end}}
+            <tr>
+
+            </tr>
+        </table>
+        {{else}}
+        Nothing
+        {{end}}
+
+        {{template "bottom_nav"}}
+    </body>
+</html>

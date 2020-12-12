@@ -35,13 +35,13 @@
         
         <table>
             <tr>
-                <td colspan="5">Classroom List</td>
+                <td colspan="6">Classroom List</td>
             </tr>
             <tr>
                 <th>ID</th>
                 <th>Code</th>
                 <th>Title</th>
-                <th colspan="2">Action</th>
+                <th colspan="3">Action</th>
             </tr>
             {{range $key, $val := .Classroom}}
             <tr>
@@ -50,22 +50,27 @@
                 <td>{{$val.Title}}</td>
                 <td>&nbsp;<a href="/classroom/{{$val.Id}}/question"><i>Questions</i></a>&nbsp;</td>
                 {{if eq $.User.Type "lecturer"}}
-                {{/* <td>&nbsp;<a href="/classroom" onclick="deleteClassroom(event,{{$val.Id}})"><i>Delete</i></a>&nbsp;</td> */}}
-                <td>&nbsp;<a href="/classroom/{{$val.Id}}/report"><i>Summary</i></a>&nbsp;</td>
+                <td>&nbsp;<a href="/classroom/{{$val.Id}}/edit"><i>Edit</i></a>&nbsp;</td>
+                <td>&nbsp;<a href="/classroom/{{$val.Id}}/summary"><i>Summary</i></a>&nbsp;</td>
                 {{end}}
                 
             </tr>
             {{end}}
             <tr>
                 {{if eq .User.Type "lecturer"}}
-                <td colspan="5">+<a href="/classroom/add"><i>Add new classroom</i></a></td>
+                <td colspan="6">+<a href="/classroom/add"><i>Add new classroom</i></a></td>
                 {{else if eq .User.Type "student" }}
-                <td colspan="5">+<a href="/classroom/join"><i> Join new classroom</i></a></td>
+                <td colspan="6">+<a href="/classroom/join"><i> Join new classroom</i></a></td>
                 {{end}}
             </tr>
         </table>
         {{else}}
+        {{if eq .User.Type "lecturer"}}
         <h4>There is no classroom here! Please <a href="/classroom/add">add a classroom</a> first!</h4>
+        {{else if eq .User.Type "student" }}
+        <h4>There is no classroom here! Please <a href="/classroom/join">join a classroom</a> first!</h4>
+        {{end}}
+        
         {{end}}
 
         {{template "bottom_nav"}}

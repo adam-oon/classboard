@@ -38,12 +38,12 @@ func GetAnswer(question_id int, user_id int) (*Answer, error) {
 	row := db.QueryRow("SELECT * from answers WHERE question_id = ? AND user_id = ?", question_id, user_id)
 	err := row.Scan(&answer.Question_id, &answer.User_id, &answer.Answer, &answer.Is_correct)
 	switch err {
-	case sql.ErrNoRows:
+	case sql.ErrNoRows: // no result
 		return nil, nil
-	case nil:
+	case nil: // result found
 		pointer_answer := &answer
 		return pointer_answer, nil
-	default:
+	default: // sql error
 		return nil, err
 	}
 }

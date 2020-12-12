@@ -1,7 +1,7 @@
 package models
 
 import (
-	"database/sql"
+	"classboard/config"
 	"fmt"
 )
 
@@ -13,12 +13,11 @@ type User struct {
 	Name     string
 }
 
-type UserModel struct {
-	Db *sql.DB
-}
+func GetUserByUsername(username string) User {
+	db := config.GetMySQLDB()
+	defer db.Close()
 
-func (userModel UserModel) GetUserByUsername(username string) User {
-	rows, err := userModel.Db.Query("SELECT * FROM users WHERE username = ?", username)
+	rows, err := db.Query("SELECT * FROM users WHERE username = ?", username)
 	defer rows.Close()
 	if err != nil {
 		return User{}
@@ -32,8 +31,11 @@ func (userModel UserModel) GetUserByUsername(username string) User {
 	return user
 }
 
-func (userModel UserModel) GetUser(user_id int) User {
-	rows, err := userModel.Db.Query("SELECT * FROM users WHERE id = ?", user_id)
+func GetUser(user_id int) User {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	rows, err := db.Query("SELECT * FROM users WHERE id = ?", user_id)
 	defer rows.Close()
 	if err != nil {
 		fmt.Println(err)

@@ -40,14 +40,22 @@
                 <th>Question</th>
                 <th>Action</th>
                 <th>Status</th>
-
             </tr>
             {{range $key, $val := .Questions}}
             <tr>
                 <td>{{inc $key 1}}</td>
                 <td>{{$val.Question}}</td>
                 <td>&nbsp;<a href="/classroom/{{$.Classroom.Id}}/question/{{$val.Id}}"><i>Detail</i></a>&nbsp;</td>
-                <td></td>
+                <td>
+                    {{$answerStatus := index $.Answers $val.Id}}
+                    {{if eq $answerStatus 1}}
+                    <b style='color:green'>&#10004</b>
+                    {{else if eq $answerStatus -1}}
+                    <b style='color:red'>&#10006</b>
+                    {{else if eq $answerStatus 0}}
+                    <b style='color:blue'>?</b>
+                    {{end}}
+                </td>
             </tr>
             {{end}}
         </table>

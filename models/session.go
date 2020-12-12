@@ -1,20 +1,17 @@
 package models
 
-import (
-	"database/sql"
-)
+import "classboard/config"
 
 type Session struct {
 	Session_id string
 	User_id    int
 }
 
-type SessionModel struct {
-	Db *sql.DB
-}
+func CheckSession(id string) bool {
+	db := config.GetMySQLDB()
+	defer db.Close()
 
-func (sessionModel SessionModel) CheckSession(id string) bool {
-	rows, err := sessionModel.Db.Query("SELECT * FROM sessions WHERE session_id = ?", id)
+	rows, err := db.Query("SELECT * FROM sessions WHERE session_id = ?", id)
 	defer rows.Close()
 	if err != nil {
 		return false
@@ -32,8 +29,11 @@ func (sessionModel SessionModel) CheckSession(id string) bool {
 	return false
 }
 
-func (sessionModel SessionModel) GetUserID(session_id string) int {
-	rows, err := sessionModel.Db.Query("SELECT user_id FROM sessions WHERE session_id = ?", session_id)
+func GetUserID(session_id string) int {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	rows, err := db.Query("SELECT user_id FROM sessions WHERE session_id = ?", session_id)
 	defer rows.Close()
 	if err != nil {
 		panic(err.Error())
@@ -47,8 +47,11 @@ func (sessionModel SessionModel) GetUserID(session_id string) int {
 	return user_id
 }
 
-func (sessionModel SessionModel) DeleteSession(user_id int) bool {
-	result, err := sessionModel.Db.Exec("DELETE FROM sessions WHERE user_id =?", user_id)
+func DeleteSession(user_id int) bool {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	result, err := db.Exec("DELETE FROM sessions WHERE user_id =?", user_id)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -60,8 +63,11 @@ func (sessionModel SessionModel) DeleteSession(user_id int) bool {
 	}
 }
 
-func (sessionModel SessionModel) DeleteSessionByID(session_id string) bool {
-	result, err := sessionModel.Db.Exec("DELETE FROM sessions WHERE session_id =?", session_id)
+func DeleteSessionByID(session_id string) bool {
+	db := config.GetMySQLDB()
+	defer db.Close()
+
+	result, err := db.Exec("DELETE FROM sessions WHERE session_id =?", session_id)
 	if err != nil {
 		panic(err.Error())
 	}
