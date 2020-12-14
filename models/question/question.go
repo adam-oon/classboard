@@ -1,9 +1,8 @@
 package question
 
 import (
-	"classboard/config"
+	"database/sql"
 	"errors"
-	"fmt"
 )
 
 type Question struct {
@@ -23,70 +22,63 @@ type QuestionInput struct {
 	Solution     string
 }
 
-func SaveQuestion(question QuestionInput) error {
-	db := config.GetMySQLDB()
-	defer db.Close()
+type QuestionModel struct {
+	Db *sql.DB
+}
 
-	_, err := db.Exec("INSERT INTO questions (classroom_id, question, type,choice, solution) VALUES (?,?,?,?,?)", question.Classroom_id, question.Question, question.Type, question.Choice, question.Solution)
+func (model QuestionModel) SaveQuestion(question QuestionInput) error {
+	_, err := model.Db.Exec("INSERT INTO questions (classroom_id, question, type,choice, solution) VALUES (?,?,?,?,?)", question.Classroom_id, question.Question, question.Type, question.Choice, question.Solution)
 
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("Failed to insert question")
+		return err
 	}
 	return nil
 }
 
-func GetQuestionsByClassroomId(classroom_id string) []Question {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
+func (model QuestionModel) GetQuestionsByClassroomId(classroom_id string) ([]Question, error) {
 	var questions []Question
-	rows, err := db.Query("SELECT * from questions WHERE classroom_id = ?", classroom_id)
+	rows, err := model.Db.Query("SELECT * from questions WHERE classroom_id = ?", classroom_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	for rows.Next() {
 		var question Question
 		err := rows.Scan(&question.Id, &question.Classroom_id, &question.Question, &question.Type, &question.Choice, &question.Solution)
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 		questions = append(questions, question)
 	}
 
-	return questions
+	return questions, nil
 }
 
-func GetQuestion(question_id int) Question {
-	db := config.GetMySQLDB()
-	defer db.Close()
+func (model QuestionModel) GetQuestion(question_id int) (Question, error) {
 
-	rows, err := db.Query("SELECT * from questions WHERE id = ?", question_id)
+	rows, err := model.Db.Query("SELECT * from questions WHERE id = ?", question_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err.Error())
+		return Question{}, err
 	}
 
 	var question Question
 	for rows.Next() {
 		err := rows.Scan(&question.Id, &question.Classroom_id, &question.Question, &question.Type, &question.Choice, &question.Solution)
 		if err != nil {
-			panic(err.Error())
+			return Question{}, err
 		}
 	}
 
-	return question
+	return question, nil
 }
 
-func DeleteQuestion(question_id int) error {
-	db := config.GetMySQLDB()
-	defer db.Close()
+func (model QuestionModel) DeleteQuestion(question_id int) error {
 
-	result, err := db.Exec("DELETE FROM questions WHERE id =?", question_id)
+	result, err := model.Db.Exec("DELETE FROM questions WHERE id =?", question_id)
 	if err != nil {
-		panic(err.Error()) // error//
+		return err
 	}
 
 	if changed, _ := result.RowsAffected(); changed == 1 {

@@ -1,10 +1,7 @@
 package classroom
 
 import (
-	"classboard/config"
 	"database/sql"
-	"errors"
-	"fmt"
 )
 
 type Classroom struct {
@@ -18,77 +15,58 @@ type ClassroomModel struct {
 	Db *sql.DB
 }
 
-type ResMessage struct {
-	ResponseText string
-	ID           string
-}
-
-func GetClassroomsByUserId(user_id int) []Classroom {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
+func (model ClassroomModel) GetClassroomsByUserId(user_id int) ([]Classroom, error) {
 	var classrooms []Classroom
-	rows, err := db.Query("SELECT * from classrooms WHERE user_id = ?", user_id)
+	rows, err := model.Db.Query("SELECT * from classrooms WHERE user_id = ?", user_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	for rows.Next() {
 		var classroom Classroom
 		err := rows.Scan(&classroom.Id, &classroom.User_id, &classroom.Code, &classroom.Title)
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 		classrooms = append(classrooms, classroom)
 	}
 
-	return classrooms
+	return classrooms, nil
 }
 
-func GetClassroom(classroom_id string) Classroom {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT * from classrooms WHERE id = ?", classroom_id)
+func (model ClassroomModel) GetClassroom(classroom_id string) (Classroom, error) {
+	rows, err := model.Db.Query("SELECT * from classrooms WHERE id = ?", classroom_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err.Error())
+		return Classroom{}, err
 	}
 
 	var classroom Classroom
 	for rows.Next() {
 		err := rows.Scan(&classroom.Id, &classroom.User_id, &classroom.Title, &classroom.Code)
 		if err != nil {
-			panic(err.Error())
+			return classroom, err
 		}
 	}
 
-	return classroom
+	return classroom, nil
 }
 
-func SaveClassroom(classroom Classroom) error {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	_, err := db.Exec("INSERT INTO classrooms (id, user_id, title, code) VALUES (?, ?, ?, ?)", classroom.Id, classroom.User_id, classroom.Title, classroom.Code)
-
+func (model ClassroomModel) SaveClassroom(classroom Classroom) error {
+	_, err := model.Db.Exec("INSERT INTO classrooms (id, user_id, title, code) VALUES (?, ?, ?, ?)", classroom.Id, classroom.User_id, classroom.Title, classroom.Code)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("Failed to insert classroom")
+		return err
 	}
+
 	return nil
 }
 
-func UpdateClassroom(classroom Classroom) error {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	_, err := db.Exec("UPDATE classrooms SET title = ?, code = ? WHERE id = ?", classroom.Title, classroom.Code, classroom.Id)
-
+func (model ClassroomModel) UpdateClassroom(classroom Classroom) error {
+	_, err := model.Db.Exec("UPDATE classrooms SET title = ?, code = ? WHERE id = ?", classroom.Title, classroom.Code, classroom.Id)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("Failed to update classroom")
+		return err
 	}
+
 	return nil
 }

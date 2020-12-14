@@ -1,17 +1,21 @@
 package session
 
-import "classboard/config"
+import (
+	"database/sql"
+	"errors"
+)
 
 type Session struct {
 	Session_id string
 	User_id    int
 }
 
-func CheckSession(id string) bool {
-	db := config.GetMySQLDB()
-	defer db.Close()
+type SessionModel struct {
+	Db *sql.DB
+}
 
-	rows, err := db.Query("SELECT * FROM sessions WHERE session_id = ?", id)
+func (model SessionModel) CheckSession(id string) bool {
+	rows, err := model.Db.Query("SELECT * FROM sessions WHERE session_id = ?", id)
 	defer rows.Close()
 	if err != nil {
 		return false
@@ -29,14 +33,11 @@ func CheckSession(id string) bool {
 	return false
 }
 
-func GetUserID(session_id string) int {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT user_id FROM sessions WHERE session_id = ?", session_id)
+func (model SessionModel) GetUserID(session_id string) (int, error) {
+	rows, err := model.Db.Query("SELECT user_id FROM sessions WHERE session_id = ?", session_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err.Error())
+		return 0, err
 	}
 
 	var user_id int
@@ -44,37 +45,40 @@ func GetUserID(session_id string) int {
 		rows.Scan(&user_id)
 	}
 
-	return user_id
+	return user_id, nil
 }
 
-func DeleteSession(user_id int) bool {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	result, err := db.Exec("DELETE FROM sessions WHERE user_id =?", user_id)
+func (model SessionModel) DeleteSession(user_id int) error {
+	result, err := model.Db.Exec("DELETE FROM sessions WHERE user_id =?", user_id)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	if changed, _ := result.RowsAffected(); changed == 1 {
-		return true
+		return nil
 	} else {
-		return false
+		return errors.New("Session doesn't exist")
 	}
 }
 
-func DeleteSessionByID(session_id string) bool {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	result, err := db.Exec("DELETE FROM sessions WHERE session_id =?", session_id)
+func (model SessionModel) DeleteSessionByID(session_id string) error {
+	result, err := model.Db.Exec("DELETE FROM sessions WHERE session_id =?", session_id)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	if changed, _ := result.RowsAffected(); changed == 1 {
-		return true
+		return nil
 	} else {
-		return false
+		return errors.New("Session doesn't exist")
 	}
+}
+
+func (model SessionModel) SaveSession(session Session) error {
+	_, err := model.Db.Exec("INSERT INTO sessions (session_id, user_id) VALUES (?,?)", session.Session_id, session.User_id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

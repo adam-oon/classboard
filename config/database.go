@@ -1,3 +1,6 @@
+/*
+	Package config provide app configuration
+*/
 package config
 
 import (
@@ -7,7 +10,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func GetMySQLDB() *sql.DB {
+//GetMySQLDB return sql.DB connection instance
+func GetMySQLDB() (*sql.DB, error) {
 	dbDriver := "mysql"
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASSWORD")
@@ -15,7 +19,7 @@ func GetMySQLDB() *sql.DB {
 	dbSchema := os.Getenv("DB_SCHEMA")
 	db, err := sql.Open(dbDriver, dbUser+":"+dbPass+"@tcp("+dbIP+")/"+dbSchema)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	return db
+	return db, nil
 }

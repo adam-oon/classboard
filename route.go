@@ -7,9 +7,6 @@ func router() *mux.Router {
 	// page
 	router.HandleFunc("/", indexPage)
 	router.HandleFunc("/register", registerPage).Methods("GET")
-	router.HandleFunc("/register", register).Methods("POST")
-	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/logout", logout)
 	router.HandleFunc("/dashboard", dashboardPage)
 	router.HandleFunc("/classroom/add", addClassroomPage)
 	router.HandleFunc("/classroom/join", joinClassroomPage)
@@ -18,6 +15,11 @@ func router() *mux.Router {
 	router.HandleFunc("/classroom/{classroom_id}/question/{question_id}", questionPage)
 	router.HandleFunc("/classroom/{classroom_id}/summary", summaryPage)
 	router.HandleFunc("/classroom/{classroom_id}/edit", editClassroomPage)
+
+	// auth
+	router.HandleFunc("/register", registerHandler).Methods("POST")
+	router.HandleFunc("/login", loginHandler).Methods("POST")
+	router.HandleFunc("/logout", logoutHandler)
 
 	// api
 	router.HandleFunc("/api/v1/classroom", classroomHandler).Methods("POST")

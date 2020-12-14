@@ -28,7 +28,11 @@ func main() {
 		Error.Fatalln("Failed to load .env file", err)
 	}
 
-	db = config.GetMySQLDB()
+	var dbErr error
+	db, dbErr = config.GetMySQLDB()
+	if dbErr != nil {
+		Error.Fatalln(dbErr)
+	}
 	defer db.Close()
 
 	router := router()

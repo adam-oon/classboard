@@ -1,7 +1,7 @@
 package user
 
 import (
-	"classboard/config"
+	"database/sql"
 	"fmt"
 )
 
@@ -13,14 +13,30 @@ type User struct {
 	Name     string
 }
 
-func GetUserByUsername(username string) User {
-	db := config.GetMySQLDB()
-	defer db.Close()
+type UserModel struct {
+	Db *sql.DB
+}
 
-	rows, err := db.Query("SELECT * FROM users WHERE username = ?", username)
+func (model UserModel) CheckUserByUsername(username string) (int, error) {
+	var count int
+	rows, err := model.Db.Query("SELECT COUNT(username) as totalUsername FROM users WHERE username = ?", username)
 	defer rows.Close()
 	if err != nil {
-		return User{}
+		return count, err
+	}
+
+	for rows.Next() {
+		rows.Scan(&count)
+		break
+	}
+	return count, nil
+}
+
+func (model UserModel) GetUserByUsername(username string) (User, error) {
+	rows, err := model.Db.Query("SELECT * FROM users WHERE username = ?", username)
+	defer rows.Close()
+	if err != nil {
+		return User{}, err
 	}
 
 	var user User
@@ -28,18 +44,15 @@ func GetUserByUsername(username string) User {
 		rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
 		break
 	}
-	return user
+	return user, nil
 }
 
-func GetUser(user_id int) User {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT * FROM users WHERE id = ?", user_id)
+func (model UserModel) GetUser(user_id int) (User, error) {
+	rows, err := model.Db.Query("SELECT * FROM users WHERE id = ?", user_id)
 	defer rows.Close()
 	if err != nil {
 		fmt.Println(err)
-		return User{}
+		return User{}, err
 	}
 
 	var user User
@@ -47,5 +60,15 @@ func GetUser(user_id int) User {
 		rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
 		break
 	}
-	return user
+	return user, nil
+}
+
+func (model UserModel) SaveUser(username, password, usertype, name string) error {
+	_, err := model.Db.Exec("INSERT INTO users ( username, password, type, name) VALUES (?, ?, ?,?)",
+		username, password, usertype, name)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

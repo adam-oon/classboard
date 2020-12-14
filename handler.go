@@ -5,7 +5,6 @@ import (
 	answermodel "classboard/models/answer"
 	classroommodel "classboard/models/classroom"
 	questionmodel "classboard/models/question"
-	sessionmodel "classboard/models/session"
 	summarymodel "classboard/models/summary"
 	usermodel "classboard/models/user"
 	userclassmodel "classboard/models/userclass"
@@ -20,21 +19,22 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func classroomHandler(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req)
+// JSON response struct
+type ResMessage struct {
+	ResponseText string
+}
 
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
+func classroomHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
-	user_id := sessionmodel.GetUserID(myCookie.Value)
-	id, _ := uuid.NewV4()
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
 
-	user := getUser(req)
+	id, _ := uuid.NewV4()
+	user := getSessionUser(req)
 
 	if isStudent(user.Type) {
 		res.WriteHeader(http.StatusForbidden)
@@ -60,12 +60,15 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 
 			classroom := classroommodel.Classroom{
 				Id:      id.String(),
-				User_id: user_id,
+				User_id: user.Id,
 				Title:   strings.TrimSpace(classroomJSON.Title),
 				Code:    strings.TrimSpace(classroomJSON.Code),
 			}
 
-			err = classroommodel.SaveClassroom(classroom)
+			classroomModel := classroommodel.ClassroomModel{
+				Db: db,
+			}
+			err = classroomModel.SaveClassroom(classroom)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -94,11 +97,14 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			classroom := classroommodel.GetClassroom(params["classroom_id"])
+			classroomModel := classroommodel.ClassroomModel{
+				Db: db,
+			}
+			classroom, err := classroomModel.GetClassroom(params["classroom_id"])
 			classroom.Title = classroomJSON.Title
 			classroom.Code = classroomJSON.Code
 
-			err = classroommodel.UpdateClassroom(classroom)
+			err = classroomModel.UpdateClassroom(classroom)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -112,20 +118,32 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req)
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
-	user_id := sessionmodel.GetUserID(myCookie.Value)
-	classroom := classroommodel.GetClassroom(params["classroom_id"])
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
+	user := getSessionUser(req)
+
+	if isStudent(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 	owner_id := classroom.User_id
 
-	if user_id != owner_id {
+	if user.Id != owner_id {
 		res.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
 		return
@@ -178,7 +196,10 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 				Solution:     strings.TrimSpace(questionJSON.Solution),
 			}
 
-			err = questionmodel.SaveQuestion(questionInput)
+			questionModel := questionmodel.QuestionModel{
+				Db: db,
+			}
+			err = questionModel.SaveQuestion(questionInput)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -193,7 +214,7 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 
 func indexPage(res http.ResponseWriter, req *http.Request) {
 	// return to dashboard if login
-	if alreadyLoggedIn(req) {
+	if isLoggedIn(req) {
 		http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
 		return
 	}
@@ -205,7 +226,8 @@ func indexPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func registerPage(res http.ResponseWriter, req *http.Request) {
-	if alreadyLoggedIn(req) {
+	// return to dashboard if login
+	if isLoggedIn(req) {
 		http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
 		return
 	}
@@ -216,27 +238,31 @@ func registerPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func dashboardPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
-		return
-	}
-
-	user_id := sessionmodel.GetUserID(myCookie.Value)
-	user := usermodel.GetUser(user_id)
+	user := getSessionUser(req)
 
 	var classrooms []classroommodel.Classroom
+	var err error
 	switch user.Type {
 	case "lecturer":
-		classrooms = classroommodel.GetClassroomsByUserId(user_id)
+		classroomModel := classroommodel.ClassroomModel{
+			Db: db,
+		}
+		classrooms, err = classroomModel.GetClassroomsByUserId(user.Id)
+
 	case "student":
-		classrooms = userclassmodel.GetJoinedClass(user_id)
+		userclassModel := userclassmodel.UserClassModel{
+			Db: db,
+		}
+		classrooms, err = userclassModel.GetJoinedClass(user.Id)
+	}
+
+	if err != nil {
+		Info.Println(err)
 	}
 
 	data := struct {
@@ -254,13 +280,13 @@ func dashboardPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func addClassroomPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
 	var template string
-	user := getUser(req)
+	user := getSessionUser(req)
 
 	if isLecturer(user.Type) {
 		template = "classroom_add.gohtml"
@@ -275,14 +301,21 @@ func addClassroomPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func editClassroomPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
 	params := mux.Vars(req)
-	user := getUser(req)
-	classroom := classroommodel.GetClassroom(params["classroom_id"])
+	user := getSessionUser(req)
+
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 
 	var template string
 	if isLecturer(user.Type) && user.Id == classroom.User_id {
@@ -298,12 +331,12 @@ func editClassroomPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func joinClassroomPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
-	user := getUser(req)
+	user := getSessionUser(req)
 
 	var template string
 	if isLecturer(user.Type) {
@@ -319,25 +352,39 @@ func joinClassroomPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
 	params := mux.Vars(req)
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		//error//
+	user := getSessionUser(req)
+
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+	questionModel := questionmodel.QuestionModel{
+		Db: db,
+	}
+	userclassModel := userclassmodel.UserClassModel{
+		Db: db,
+	}
+	answerModel := answermodel.AnswerModel{
+		Db: db,
 	}
 
-	user_id := sessionmodel.GetUserID(myCookie.Value)
-	user := usermodel.GetUser(user_id)
-	classroom := classroommodel.GetClassroom(params["classroom_id"])
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 
 	if isLecturer(user.Type) {
 		// check lecturer is the classroom owner
-		if user_id == classroom.User_id {
-			questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
+		if user.Id == classroom.User_id {
+			questions, err := questionModel.GetQuestionsByClassroomId(params["classroom_id"])
+			if err != nil {
+				Info.Println(err)
+			}
 			data := struct {
 				Classroom classroommodel.Classroom
 				Questions []questionmodel.Question
@@ -354,9 +401,12 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 
 	} else if isStudent(user.Type) {
 		// check student is joined the class
-		isStudentClass := userclassmodel.IsBelongToClassroom(user_id, params["classroom_id"])
+		isStudentClass := userclassModel.IsBelongToClassroom(user.Id, params["classroom_id"])
 		if isStudentClass {
-			questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
+			questions, err := questionModel.GetQuestionsByClassroomId(params["classroom_id"])
+			if err != nil {
+				Info.Println(err)
+			}
 
 			studentAnswers := make(map[int]int)
 
@@ -364,7 +414,7 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 				// isCorrect is placeholder to determine answer status
 				// -1 = incorrect answer, 0 = no answer,1 = correct answer
 				var isCorrect int
-				answer, _ := answermodel.GetAnswer(v.Id, user.Id)
+				answer, _ := answerModel.GetAnswer(v.Id, user.Id)
 				if answer != nil {
 					if answer.Is_correct {
 						isCorrect = 1
@@ -400,12 +450,12 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func addQuestionPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 	params := mux.Vars(req)
-	user := getUser(req)
+	user := getSessionUser(req)
 
 	var template string
 	if isLecturer(user.Type) {
@@ -421,17 +471,15 @@ func addQuestionPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func joinClassHandler(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req)
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
-	user_id := sessionmodel.GetUserID(myCookie.Value)
-	user := usermodel.GetUser(user_id)
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
+
+	user := getSessionUser(req)
 
 	if isLecturer(user.Type) {
 		res.WriteHeader(http.StatusForbidden)
@@ -442,7 +490,10 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		classroom_id := params["classroom_id"]
 
-		err = userclassmodel.JoinClass(user_id, classroom_id)
+		userclassModel := userclassmodel.UserClassModel{
+			Db: db,
+		}
+		err := userclassModel.JoinClass(user.Id, classroom_id)
 		if err != nil {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -455,11 +506,28 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func questionHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
 	res.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(req)
-	user := getUser(req)
+	user := getSessionUser(req)
 
-	classroom := classroommodel.GetClassroom(params["classroom_id"])
+	if isStudent(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 	owner_id := classroom.User_id
 
 	if user.Id != owner_id {
@@ -478,14 +546,21 @@ func questionHandler(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// delete student answer first, then delete question
-		err = answermodel.DeleteAnswer(question_id)
+		answerModel := answermodel.AnswerModel{
+			Db: db,
+		}
+		questionModel := questionmodel.QuestionModel{
+			Db: db,
+		}
+
+		err = answerModel.DeleteAnswer(question_id)
 		if err != nil {
 			res.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
 			return
 		}
 
-		err = questionmodel.DeleteQuestion(question_id)
+		err = questionModel.DeleteQuestion(question_id)
 		if err != nil {
 			res.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
@@ -500,17 +575,27 @@ func questionHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func questionPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
 	params := mux.Vars(req)
-	user := getUser(req)
-	// check question_id is belongs to classroom_
+	user := getSessionUser(req)
 
+	questionModel := questionmodel.QuestionModel{
+		Db: db,
+	}
+	answerModel := answermodel.AnswerModel{
+		Db: db,
+	}
+
+	// check question_id is belongs to classroom_
 	question_id, _ := strconv.Atoi(params["question_id"])
-	question := questionmodel.GetQuestion(question_id)
+	question, err := questionModel.GetQuestion(question_id)
+	if err != nil {
+		Info.Println(err)
+	}
 
 	// if question not belongs to the class
 	if question.Classroom_id != params["classroom_id"] {
@@ -527,7 +612,7 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 			Warning.Println(templateErr)
 		}
 	} else if isStudent(user.Type) {
-		answer, err := answermodel.GetAnswer(question_id, user.Id)
+		answer, err := answerModel.GetAnswer(question_id, user.Id)
 		if err != nil {
 			Warning.Println(err)
 		}
@@ -564,17 +649,19 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 }
 
 func answerHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
 	res.Header().Set("Content-Type", "application/json")
-	// params := mux.Vars(req)
+	user := getSessionUser(req)
 
-	// get question solution
-	user := getUser(req)
-
-	// if user_id != owner_id {
-	// 	res.WriteHeader(http.StatusForbidden)
-	// 	json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-	// 	return
-	// }
+	if isLecturer(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
 
 	if req.Method == http.MethodPost && req.Header.Get("Content-type") == "application/json" {
 		reqBody, err := ioutil.ReadAll(req.Body)
@@ -592,7 +679,18 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			question := questionmodel.GetQuestion(answerJSON.Question_id)
+			questionModel := questionmodel.QuestionModel{
+				Db: db,
+			}
+			answerModel := answermodel.AnswerModel{
+				Db: db,
+			}
+
+			question, err := questionModel.GetQuestion(answerJSON.Question_id)
+			if err != nil {
+				Info.Println(err)
+			}
+
 			var isCorrect bool
 			if question.Solution == answerJSON.Answer {
 				isCorrect = true
@@ -610,7 +708,7 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 				Is_correct:  isCorrect,
 			}
 
-			err = answermodel.SaveAnswer(answer)
+			err = answerModel.SaveAnswer(answer)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -631,15 +729,35 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func summaryPage(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 
+	// middleware
 	params := mux.Vars(req)
-	user := getUser(req)
+	user := getSessionUser(req)
 
-	classroom := classroommodel.GetClassroom(params["classroom_id"])
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+	userclassModel := userclassmodel.UserClassModel{
+		Db: db,
+	}
+	questionModel := questionmodel.QuestionModel{
+		Db: db,
+	}
+	userModel := usermodel.UserModel{
+		Db: db,
+	}
+	answerModel := answermodel.AnswerModel{
+		Db: db,
+	}
+
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 	owner_id := classroom.User_id
 
 	if user.Id != owner_id || isStudent(user.Type) {
@@ -653,17 +771,26 @@ func summaryPage(res http.ResponseWriter, req *http.Request) {
 	var answered, correct int
 
 	// get class's student
-	students := userclassmodel.GetClassroomStudent(params["classroom_id"])
+	students, err := userclassModel.GetClassroomStudent(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 	// get class question
-	questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
+	questions, err := questionModel.GetQuestionsByClassroomId(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
 	// get answer from student and put into dictionary type
 	var dict *dictionary.Dictionary = &dictionary.Dictionary{}
 	for _, user_id := range students {
-		user := usermodel.GetUser(user_id)
+		user, err := userModel.GetUser(user_id)
+		if err != nil {
+			Info.Println(err)
+		}
 		var rm *dictionary.ResultMap = &dictionary.ResultMap{}
 		for _, question := range questions {
 			var result int
-			answer, err := answermodel.GetAnswer(question.Id, user.Id)
+			answer, err := answerModel.GetAnswer(question.Id, user.Id)
 			if err != nil {
 				Warning.Println(err)
 			} else if answer == nil && err == nil {

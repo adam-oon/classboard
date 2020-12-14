@@ -1,11 +1,9 @@
 package userclass
 
 import (
-	"classboard/config"
 	classroommodel "classboard/models/classroom"
 	"database/sql"
 	"errors"
-	"log"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -19,11 +17,8 @@ type UserClassModel struct {
 	Db *sql.DB
 }
 
-func JoinClass(user_id int, classroom_id string) error {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	_, err := db.Exec("INSERT INTO user_classes (user_id, classroom_id) VALUES (?,?)", user_id, classroom_id)
+func (model UserClassModel) JoinClass(user_id int, classroom_id string) error {
+	_, err := model.Db.Exec("INSERT INTO user_classes (user_id, classroom_id) VALUES (?,?)", user_id, classroom_id)
 
 	if err != nil {
 		if driverErr, ok := err.(*mysql.MySQLError); ok {
@@ -38,66 +33,55 @@ func JoinClass(user_id int, classroom_id string) error {
 	return nil
 }
 
-func GetClassroomStudent(classroom_id string) []int {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT user_id FROM user_classes WHERE classroom_id = ?", classroom_id)
+func (model UserClassModel) GetClassroomStudent(classroom_id string) ([]int, error) {
+	rows, err := model.Db.Query("SELECT user_id FROM user_classes WHERE classroom_id = ?", classroom_id)
 
 	if err != nil {
-		log.Panic("Failed to get classes")
-		// return errors.New("Failed to get classes")
+		return nil, err
 	}
 	var user_ids []int
 	for rows.Next() {
 		var user_id int
 		err := rows.Scan(&user_id)
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 		user_ids = append(user_ids, user_id)
 	}
 
-	return user_ids
+	return user_ids, nil
 
 }
 
-func GetJoinedClass(user_id int) []classroommodel.Classroom {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT classrooms.* FROM user_classes LEFT JOIN classrooms ON user_classes.classroom_id = classrooms.id WHERE user_classes.user_id =  ?", user_id)
+func (model UserClassModel) GetJoinedClass(user_id int) ([]classroommodel.Classroom, error) {
+	rows, err := model.Db.Query("SELECT classrooms.* FROM user_classes LEFT JOIN classrooms ON user_classes.classroom_id = classrooms.id WHERE user_classes.user_id =  ?", user_id)
 
 	if err != nil {
-		// return errors.New("Failed to get classes")
+		return nil, err
 	}
 	var userClasses []classroommodel.Classroom
 	for rows.Next() {
 		var userClass classroommodel.Classroom
 		err := rows.Scan(&userClass.Id, &userClass.User_id, &userClass.Code, &userClass.Title)
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 		userClasses = append(userClasses, userClass)
 	}
 
-	return userClasses
+	return userClasses, nil
 }
 
-func IsBelongToClassroom(user_id int, classroom_id string) bool {
-	db := config.GetMySQLDB()
-	defer db.Close()
-
-	rows, err := db.Query("SELECT COUNT(user_id) as totalUserID FROM user_classes WHERE user_id =  ? AND classroom_id = ?", user_id, classroom_id)
-
+func (model UserClassModel) IsBelongToClassroom(user_id int, classroom_id string) bool {
+	rows, err := model.Db.Query("SELECT COUNT(user_id) as totalUserID FROM user_classes WHERE user_id =  ? AND classroom_id = ?", user_id, classroom_id)
 	if err != nil {
-		// return errors.New("Failed to get classes")
+		return false
 	}
 	var count int
 	for rows.Next() {
 		err := rows.Scan(&count)
 		if err != nil {
-			panic(err.Error())
+			return false
 		}
 	}
 

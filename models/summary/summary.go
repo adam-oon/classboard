@@ -1,4 +1,9 @@
+/*
+	Package summary provides summary model that uses for reporting.
+*/
 package summary
+
+import "math"
 
 type Summary struct {
 	StudentTotal  int
@@ -7,6 +12,7 @@ type Summary struct {
 	Correctness   float64
 }
 
+// CalculateRatio takes in 2 integers and calculate percentage ratio as 2 decimal float
 func CalculateRatio(question_nums, answer_nums int) float64 {
 	var participation float64
 	qn := float64(question_nums)
@@ -17,5 +23,8 @@ func CalculateRatio(question_nums, answer_nums int) float64 {
 	}
 
 	participation = an / qn * 100
+
+	// to 2 decimal
+	participation = math.Round(participation*100) / 100
 	return participation
 }
