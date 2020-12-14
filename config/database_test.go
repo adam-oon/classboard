@@ -9,9 +9,4 @@ func TestGetMySQLDB(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-
-	err = db.Ping()
-	if err != nil {
-		t.Errorf(err.Error())
-	}
 }
