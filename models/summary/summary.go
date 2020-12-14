@@ -1,4 +1,4 @@
-package main
+package summary
 
 type Summary struct {
 	StudentTotal  int

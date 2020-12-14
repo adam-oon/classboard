@@ -6,7 +6,7 @@ package dictionary
 import (
 	"sync"
 
-	"classboard/pkg/helper"
+	"classboard/helper"
 )
 
 // Provides Dictionary structure

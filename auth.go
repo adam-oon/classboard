@@ -1,8 +1,9 @@
 package main
 
 import (
-	"classboard/models"
-	"classboard/pkg/helper"
+	"classboard/helper"
+	sessionmodel "classboard/models/session"
+	usermodel "classboard/models/user"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -155,8 +156,8 @@ func login(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		user := models.GetUserByUsername(userLogin.Username)
-		if user == (models.User{}) {
+		user := usermodel.GetUserByUsername(userLogin.Username)
+		if user == (usermodel.User{}) {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
 			return
@@ -171,7 +172,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// check user session and delete it
-		models.DeleteSession(user.Id)
+		sessionmodel.DeleteSession(user.Id)
 
 		// create session
 		id, _ := uuid.NewV4()
@@ -202,7 +203,7 @@ func logout(res http.ResponseWriter, req *http.Request) {
 
 	myCookie, _ := req.Cookie("myCookie")
 	// delete the session
-	models.DeleteSessionByID(myCookie.Value)
+	sessionmodel.DeleteSessionByID(myCookie.Value)
 	// remove the cookie
 	myCookie = &http.Cookie{
 		Name:   "myCookie",
@@ -219,14 +220,14 @@ func sanitizeUserInput(user *User) {
 	user.Name = strings.TrimSpace(user.Name)
 }
 
-func getUser(req *http.Request) models.User {
+func getUser(req *http.Request) usermodel.User {
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
 		//error//
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
-	user := models.GetUser(user_id)
+	user_id := sessionmodel.GetUserID(myCookie.Value)
+	user := usermodel.GetUser(user_id)
 	return user
 }
 
@@ -244,6 +245,6 @@ func alreadyLoggedIn(req *http.Request) bool {
 		return false
 	}
 
-	ok := models.CheckSession(myCookie.Value)
+	ok := sessionmodel.CheckSession(myCookie.Value)
 	return ok
 }

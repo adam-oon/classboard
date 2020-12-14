@@ -1,3 +1,6 @@
+/*
+	Package logger provides general functions that simplify process and/or perform validation check.
+*/
 package main
 
 import (
@@ -16,16 +19,16 @@ var (
 
 func init() {
 	// initialize custom error logging
-	traceFile, err := os.OpenFile("logs/trace.txt",
+	traceFile, err := os.OpenFile("storage/logs/trace.txt",
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		Error.Fatalln("Failed to open error log file:", err)
+		log.Fatalln("Failed to open error log file:", err)
 	}
 
-	errorFile, err := os.OpenFile("logs/errors.txt",
+	errorFile, err := os.OpenFile("storage/logs/error.txt",
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		Error.Fatalln("Failed to open error log file:", err)
+		log.Fatalln("Failed to open error log file:", err)
 	}
 
 	Trace = log.New(io.MultiWriter(traceFile, os.Stderr),

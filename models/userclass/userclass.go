@@ -1,7 +1,8 @@
-package models
+package userclass
 
 import (
 	"classboard/config"
+	classroommodel "classboard/models/classroom"
 	"database/sql"
 	"errors"
 	"log"
@@ -61,7 +62,7 @@ func GetClassroomStudent(classroom_id string) []int {
 
 }
 
-func GetJoinedClass(user_id int) []Classroom {
+func GetJoinedClass(user_id int) []classroommodel.Classroom {
 	db := config.GetMySQLDB()
 	defer db.Close()
 
@@ -70,9 +71,9 @@ func GetJoinedClass(user_id int) []Classroom {
 	if err != nil {
 		// return errors.New("Failed to get classes")
 	}
-	var userClasses []Classroom
+	var userClasses []classroommodel.Classroom
 	for rows.Next() {
-		var userClass Classroom
+		var userClass classroommodel.Classroom
 		err := rows.Scan(&userClass.Id, &userClass.User_id, &userClass.Code, &userClass.Title)
 		if err != nil {
 			panic(err.Error())

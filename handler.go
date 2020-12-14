@@ -2,11 +2,16 @@ package main
 
 import (
 	"classboard/dictionary"
-	"classboard/models"
+	answermodel "classboard/models/answer"
+	classroommodel "classboard/models/classroom"
+	questionmodel "classboard/models/question"
+	sessionmodel "classboard/models/session"
+	summarymodel "classboard/models/summary"
+	usermodel "classboard/models/user"
+	userclassmodel "classboard/models/userclass"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,7 +31,7 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
+	user_id := sessionmodel.GetUserID(myCookie.Value)
 	id, _ := uuid.NewV4()
 
 	user := getUser(req)
@@ -53,14 +58,14 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			classroom := models.Classroom{
+			classroom := classroommodel.Classroom{
 				Id:      id.String(),
 				User_id: user_id,
 				Title:   strings.TrimSpace(classroomJSON.Title),
 				Code:    strings.TrimSpace(classroomJSON.Code),
 			}
 
-			err = models.SaveClassroom(classroom)
+			err = classroommodel.SaveClassroom(classroom)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -89,11 +94,11 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			classroom := models.GetClassroom(params["classroom_id"])
+			classroom := classroommodel.GetClassroom(params["classroom_id"])
 			classroom.Title = classroomJSON.Title
 			classroom.Code = classroomJSON.Code
 
-			err = models.UpdateClassroom(classroom)
+			err = classroommodel.UpdateClassroom(classroom)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -116,8 +121,8 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
-	classroom := models.GetClassroom(params["classroom_id"])
+	user_id := sessionmodel.GetUserID(myCookie.Value)
+	classroom := classroommodel.GetClassroom(params["classroom_id"])
 	owner_id := classroom.User_id
 
 	if user_id != owner_id {
@@ -165,7 +170,7 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 			}
 
 			// validate solution
-			questionInput := models.QuestionInput{
+			questionInput := questionmodel.QuestionInput{
 				Classroom_id: strings.TrimSpace(params["classroom_id"]),
 				Question:     strings.TrimSpace(questionJSON.Question),
 				Type:         strings.TrimSpace(questionJSON.Type),
@@ -173,7 +178,7 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 				Solution:     strings.TrimSpace(questionJSON.Solution),
 			}
 
-			err = models.SaveQuestion(questionInput)
+			err = questionmodel.SaveQuestion(questionInput)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -193,9 +198,9 @@ func indexPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, "index.gohtml", nil)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, "index.gohtml", nil)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -204,9 +209,9 @@ func registerPage(res http.ResponseWriter, req *http.Request) {
 		http.Redirect(res, req, "/dashboard", http.StatusSeeOther)
 		return
 	}
-	fatalErr := tpl.ExecuteTemplate(res, "register.gohtml", nil)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, "register.gohtml", nil)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -223,28 +228,28 @@ func dashboardPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
-	user := models.GetUser(user_id)
+	user_id := sessionmodel.GetUserID(myCookie.Value)
+	user := usermodel.GetUser(user_id)
 
-	var classrooms []models.Classroom
+	var classrooms []classroommodel.Classroom
 	switch user.Type {
 	case "lecturer":
-		classrooms = models.GetClassroomsByUserId(user_id)
+		classrooms = classroommodel.GetClassroomsByUserId(user_id)
 	case "student":
-		classrooms = models.GetJoinedClass(user_id)
+		classrooms = userclassmodel.GetJoinedClass(user_id)
 	}
 
 	data := struct {
-		User      models.User
-		Classroom []models.Classroom
+		User      usermodel.User
+		Classroom []classroommodel.Classroom
 	}{
 		user,
 		classrooms,
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, "dashboard.gohtml", data)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, "dashboard.gohtml", data)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -263,9 +268,9 @@ func addClassroomPage(res http.ResponseWriter, req *http.Request) {
 		template = "403.gohtml"
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, template, nil)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, template, nil)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -277,7 +282,7 @@ func editClassroomPage(res http.ResponseWriter, req *http.Request) {
 
 	params := mux.Vars(req)
 	user := getUser(req)
-	classroom := models.GetClassroom(params["classroom_id"])
+	classroom := classroommodel.GetClassroom(params["classroom_id"])
 
 	var template string
 	if isLecturer(user.Type) && user.Id == classroom.User_id {
@@ -286,9 +291,9 @@ func editClassroomPage(res http.ResponseWriter, req *http.Request) {
 		template = "403.gohtml"
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, template, classroom)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, template, classroom)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -297,9 +302,19 @@ func joinClassroomPage(res http.ResponseWriter, req *http.Request) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
-	fatalErr := tpl.ExecuteTemplate(res, "classroom_join.gohtml", nil)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+
+	user := getUser(req)
+
+	var template string
+	if isLecturer(user.Type) {
+		template = "403.gohtml"
+	} else {
+		template = "classroom_join.gohtml"
+	}
+
+	templateErr := tpl.ExecuteTemplate(res, template, nil)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -315,33 +330,33 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 		//error//
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
-	user := models.GetUser(user_id)
-	classroom := models.GetClassroom(params["classroom_id"])
+	user_id := sessionmodel.GetUserID(myCookie.Value)
+	user := usermodel.GetUser(user_id)
+	classroom := classroommodel.GetClassroom(params["classroom_id"])
 
 	if isLecturer(user.Type) {
 		// check lecturer is the classroom owner
 		if user_id == classroom.User_id {
-			questions := models.GetQuestionsByClassroomId(params["classroom_id"])
+			questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
 			data := struct {
-				Classroom models.Classroom
-				Questions []models.Question
+				Classroom classroommodel.Classroom
+				Questions []questionmodel.Question
 			}{
 				classroom,
 				questions,
 			}
-			fatalErr := tpl.ExecuteTemplate(res, "question.gohtml", data)
-			if fatalErr != nil {
-				log.Println(fatalErr)
+			templateErr := tpl.ExecuteTemplate(res, "question.gohtml", data)
+			if templateErr != nil {
+				Warning.Println(templateErr)
 			}
 			return
 		}
 
 	} else if isStudent(user.Type) {
 		// check student is joined the class
-		isStudentClass := models.IsBelongToClassroom(user_id, params["classroom_id"])
+		isStudentClass := userclassmodel.IsBelongToClassroom(user_id, params["classroom_id"])
 		if isStudentClass {
-			questions := models.GetQuestionsByClassroomId(params["classroom_id"])
+			questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
 
 			studentAnswers := make(map[int]int)
 
@@ -349,7 +364,7 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 				// isCorrect is placeholder to determine answer status
 				// -1 = incorrect answer, 0 = no answer,1 = correct answer
 				var isCorrect int
-				answer, _ := models.GetAnswer(v.Id, user.Id)
+				answer, _ := answermodel.GetAnswer(v.Id, user.Id)
 				if answer != nil {
 					if answer.Is_correct {
 						isCorrect = 1
@@ -361,25 +376,25 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 			}
 
 			data := struct {
-				Classroom models.Classroom
-				Questions []models.Question
+				Classroom classroommodel.Classroom
+				Questions []questionmodel.Question
 				Answers   map[int]int
 			}{
 				classroom,
 				questions,
 				studentAnswers,
 			}
-			fatalErr := tpl.ExecuteTemplate(res, "question_student.gohtml", data)
-			if fatalErr != nil {
-				log.Println(fatalErr)
+			templateErr := tpl.ExecuteTemplate(res, "question_student.gohtml", data)
+			if templateErr != nil {
+				Warning.Println(templateErr)
 			}
 			return
 		}
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 
 }
@@ -390,10 +405,18 @@ func addQuestionPage(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	params := mux.Vars(req)
+	user := getUser(req)
 
-	fatalErr := tpl.ExecuteTemplate(res, "question_add.gohtml", params["classroom_id"])
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	var template string
+	if isLecturer(user.Type) {
+		template = "question_add.gohtml"
+	} else if isStudent(user.Type) {
+		template = "403.gohtml"
+	}
+
+	templateErr := tpl.ExecuteTemplate(res, template, params["classroom_id"])
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
@@ -407,8 +430,8 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user_id := models.GetUserID(myCookie.Value)
-	user := models.GetUser(user_id)
+	user_id := sessionmodel.GetUserID(myCookie.Value)
+	user := usermodel.GetUser(user_id)
 
 	if isLecturer(user.Type) {
 		res.WriteHeader(http.StatusForbidden)
@@ -419,7 +442,7 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		classroom_id := params["classroom_id"]
 
-		err = models.JoinClass(user_id, classroom_id)
+		err = userclassmodel.JoinClass(user_id, classroom_id)
 		if err != nil {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -436,7 +459,7 @@ func questionHandler(res http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	user := getUser(req)
 
-	classroom := models.GetClassroom(params["classroom_id"])
+	classroom := classroommodel.GetClassroom(params["classroom_id"])
 	owner_id := classroom.User_id
 
 	if user.Id != owner_id {
@@ -455,14 +478,14 @@ func questionHandler(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// delete student answer first, then delete question
-		err = models.DeleteAnswer(question_id)
+		err = answermodel.DeleteAnswer(question_id)
 		if err != nil {
 			res.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
 			return
 		}
 
-		err = models.DeleteQuestion(question_id)
+		err = questionmodel.DeleteQuestion(question_id)
 		if err != nil {
 			res.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
@@ -487,55 +510,55 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 	// check question_id is belongs to classroom_
 
 	question_id, _ := strconv.Atoi(params["question_id"])
-	question := models.GetQuestion(question_id)
+	question := questionmodel.GetQuestion(question_id)
 
 	// if question not belongs to the class
 	if question.Classroom_id != params["classroom_id"] {
-		fatalErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
-		if fatalErr != nil {
-			Warning.Println(fatalErr)
+		templateErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
+		if templateErr != nil {
+			Warning.Println(templateErr)
 		}
 		return
 	}
 
 	if isLecturer(user.Type) {
-		fatalErr := tpl.ExecuteTemplate(res, "question_detail.gohtml", question)
-		if fatalErr != nil {
-			Warning.Println(fatalErr)
+		templateErr := tpl.ExecuteTemplate(res, "question_detail.gohtml", question)
+		if templateErr != nil {
+			Warning.Println(templateErr)
 		}
 	} else if isStudent(user.Type) {
-		answer, err := models.GetAnswer(question_id, user.Id)
+		answer, err := answermodel.GetAnswer(question_id, user.Id)
 		if err != nil {
 			Warning.Println(err)
 		}
 
-		var fatalErr error
+		var templateErr error
 		if answer != nil { // already answered
 			data := struct {
-				Question   models.Question
+				Question   questionmodel.Question
 				IsAnswered bool
-				Answer     models.Answer
+				Answer     answermodel.Answer
 			}{
 				question,
 				true,
 				*answer,
 			}
-			fatalErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
+			templateErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
 		} else {
 			data := struct { // not yet answer
-				Question   models.Question
+				Question   questionmodel.Question
 				IsAnswered bool
-				Answer     models.Answer
+				Answer     answermodel.Answer
 			}{
 				question,
 				false,
-				models.Answer{},
+				answermodel.Answer{},
 			}
-			fatalErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
+			templateErr = tpl.ExecuteTemplate(res, "answer_question.gohtml", data)
 		}
 
-		if fatalErr != nil {
-			Warning.Println(fatalErr)
+		if templateErr != nil {
+			Warning.Println(templateErr)
 		}
 	}
 }
@@ -569,7 +592,7 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			question := models.GetQuestion(answerJSON.Question_id)
+			question := questionmodel.GetQuestion(answerJSON.Question_id)
 			var isCorrect bool
 			if question.Solution == answerJSON.Answer {
 				isCorrect = true
@@ -580,14 +603,14 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 				Answer      string
 				Is_correct  bool
 			}
-			answer := models.Answer{
+			answer := answermodel.Answer{
 				Question_id: answerJSON.Question_id,
 				User_id:     user.Id,
 				Answer:      answerJSON.Answer,
 				Is_correct:  isCorrect,
 			}
 
-			err = models.SaveAnswer(answer)
+			err = answermodel.SaveAnswer(answer)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
@@ -616,29 +639,31 @@ func summaryPage(res http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	user := getUser(req)
 
-	classroom := models.GetClassroom(params["classroom_id"])
+	classroom := classroommodel.GetClassroom(params["classroom_id"])
 	owner_id := classroom.User_id
 
-	if user.Id != owner_id {
-		res.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+	if user.Id != owner_id || isStudent(user.Type) {
+		templateErr := tpl.ExecuteTemplate(res, "403.gohtml", nil)
+		if templateErr != nil {
+			Warning.Println(templateErr)
+		}
 		return
 	}
 
 	var answered, correct int
 
 	// get class's student
-	students := models.GetClassroomStudent(params["classroom_id"])
+	students := userclassmodel.GetClassroomStudent(params["classroom_id"])
 	// get class question
-	questions := models.GetQuestionsByClassroomId(params["classroom_id"])
+	questions := questionmodel.GetQuestionsByClassroomId(params["classroom_id"])
 	// get answer from student and put into dictionary type
 	var dict *dictionary.Dictionary = &dictionary.Dictionary{}
 	for _, user_id := range students {
-		user := models.GetUser(user_id)
+		user := usermodel.GetUser(user_id)
 		var rm *dictionary.ResultMap = &dictionary.ResultMap{}
 		for _, question := range questions {
 			var result int
-			answer, err := models.GetAnswer(question.Id, user.Id)
+			answer, err := answermodel.GetAnswer(question.Id, user.Id)
 			if err != nil {
 				Warning.Println(err)
 			} else if answer == nil && err == nil {
@@ -660,18 +685,18 @@ func summaryPage(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// summary
-	var summary Summary
+	var summary summarymodel.Summary
 	totalQuestion := dict.GetSize() * len(questions)
 	summary.StudentTotal = dict.GetSize()
 	summary.QuestionTotal = len(questions)
-	summary.Participation = CalculateRatio(totalQuestion, answered)
-	summary.Correctness = CalculateRatio(totalQuestion, correct)
+	summary.Participation = summarymodel.CalculateRatio(totalQuestion, answered)
+	summary.Correctness = summarymodel.CalculateRatio(totalQuestion, correct)
 
 	data := struct {
-		Questions []models.Question
+		Questions []questionmodel.Question
 		Result    *dictionary.Dictionary
-		Classroom models.Classroom
-		Summary   Summary
+		Classroom classroommodel.Classroom
+		Summary   summarymodel.Summary
 	}{
 		questions,
 		dict,
@@ -679,8 +704,8 @@ func summaryPage(res http.ResponseWriter, req *http.Request) {
 		summary,
 	}
 
-	fatalErr := tpl.ExecuteTemplate(res, "classroom_summary.gohtml", data)
-	if fatalErr != nil {
-		log.Println(fatalErr)
+	templateErr := tpl.ExecuteTemplate(res, "classroom_summary.gohtml", data)
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }

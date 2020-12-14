@@ -1,4 +1,4 @@
-package models
+package classroom
 
 import (
 	"classboard/config"

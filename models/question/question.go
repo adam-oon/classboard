@@ -1,4 +1,4 @@
-package models
+package question
 
 import (
 	"classboard/config"
