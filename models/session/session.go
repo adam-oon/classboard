@@ -24,7 +24,10 @@ func (model SessionModel) CheckSession(id string) bool {
 	var session_id string
 	var user_id int
 	for rows.Next() {
-		rows.Scan(&session_id, &user_id)
+		err := rows.Scan(&session_id, &user_id)
+		if err != nil {
+			return false
+		}
 	}
 
 	if session_id != "" && user_id != 0 {
@@ -42,7 +45,10 @@ func (model SessionModel) GetUserID(session_id string) (int, error) {
 
 	var user_id int
 	for rows.Next() {
-		rows.Scan(&user_id)
+		err := rows.Scan(&user_id)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return user_id, nil

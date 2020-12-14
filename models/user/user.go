@@ -26,7 +26,10 @@ func (model UserModel) CheckUserByUsername(username string) (int, error) {
 	}
 
 	for rows.Next() {
-		rows.Scan(&count)
+		err := rows.Scan(&count)
+		if err != nil {
+			return count, err
+		}
 		break
 	}
 	return count, nil
@@ -41,7 +44,10 @@ func (model UserModel) GetUserByUsername(username string) (User, error) {
 
 	var user User
 	for rows.Next() {
-		rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
+		err := rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
+		if err != nil {
+			return User{}, err
+		}
 		break
 	}
 	return user, nil
@@ -57,7 +63,10 @@ func (model UserModel) GetUser(user_id int) (User, error) {
 
 	var user User
 	for rows.Next() {
-		rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
+		err := rows.Scan(&user.Id, &user.Username, &user.Password, &user.Type, &user.Name)
+		if err != nil {
+			return User{}, err
+		}
 		break
 	}
 	return user, nil

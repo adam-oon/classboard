@@ -5,7 +5,7 @@ package helper
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -13,9 +13,8 @@ import (
 // CheckPanic simplifies panic recover process.
 func CheckPanic() {
 	if r := recover(); r != nil {
-		fmt.Println("Something went wrong. Please report to administrator")
-		fmt.Println(r.(error))
-		fmt.Scanln()
+		log.Println("Something went wrong. Please report to administrator")
+		log.Println(r.(error))
 		return
 	}
 }

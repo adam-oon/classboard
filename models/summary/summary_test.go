@@ -16,12 +16,12 @@ func TestCalculateRatio(t *testing.T) {
 		{2, 0, 0},
 		{0, 0, 0},
 	}
-	for _, tv := range multipleTest {
+	for _, td := range multipleTest {
 		t.Run("TestCalculateRatio", func(t *testing.T) {
-			ans := CalculateRatio(tv.a, tv.b)
-			if ans != tv.want {
-				t.Errorf("CalculateRatio(%d,%d) result is not %f. %f is returned",
-					tv.a, tv.b, tv.want, ans)
+			ans := CalculateRatio(td.a, td.b)
+			if ans != td.want {
+				t.Errorf("CalculateRatio(%d,%d) result is not %f. %f is returned\n",
+					td.a, td.b, td.want, ans)
 			}
 		})
 	}
