@@ -14,7 +14,7 @@ func TestCheckPasswordStrength(t *testing.T) {
 	var multipleTest = []struct {
 		pw, want string
 	}{
-		{"ABCDEFG", "Password cannot contains spaces!"},
+		{"ABCDE FG", "Password cannot contains spaces!"},
 		{"ABCDEFG", "Password requires eight or more characters"},
 		{"ABCDEFGH", "Password requires at least one digit"},
 		{"ABCDEFG8", "Password requires at least one lowercase character"},
