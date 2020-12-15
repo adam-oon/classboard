@@ -60,7 +60,7 @@ func InArray(needle string, haystack []string) bool {
 	return false
 }
 
-// Inc increments integer by 1.
+// Inc increments integer by interval set.
 func Inc(target, interval int) int {
 	return target + interval
 }

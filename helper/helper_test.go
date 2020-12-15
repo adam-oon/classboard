@@ -1,6 +1,9 @@
 package helper
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestCheckPasswordStrength(t *testing.T) {
 	testData := "1@2b3C4d"
@@ -32,12 +35,79 @@ func TestCheckPasswordStrength(t *testing.T) {
 	}
 }
 
-// func TestInArray(t *testing.T) {
+func TestInArray(t *testing.T) {
+	var collection []string = make([]string, 5)
+	collection[0] = "Apple"
+	collection[1] = "Boy"
+	collection[2] = "Cat & Dog"
+	collection[3] = "Elephant"
+	collection[4] = "Flower"
 
-// }
-// func TestInc(t *testing.T) {
+	var multipleTest = []struct {
+		target string
+		found  bool
+	}{
+		{"apple", false},
+		{"Boy", true},
+		{"Cat & Dog", true},
+		{"Cat", false},
+		{"Gundam", false},
+	}
+	for _, td := range multipleTest {
+		t.Run("TestInArray", func(t *testing.T) {
+			isFound := InArray(td.target, collection)
+			if isFound != td.found {
+				t.Errorf("Incorrect return \"%t\" in InArray(\"%s\",%+v)\n",
+					isFound, td.target, collection)
+			}
+		})
+	}
+}
 
-// }
-// func TestStrToSlice(t *testing.T) {
+func TestInc(t *testing.T) {
+	var multipleTest = []struct {
+		target, interval, want int
+	}{
+		{0, 1, 1},
+		{0, 4, 4},
+		{4, 4, 8},
+		{16, 1, 17},
+		{17, 3, 20},
+	}
 
+	for _, td := range multipleTest {
+		t.Run("TestInc", func(t *testing.T) {
+			result := Inc(td.target, td.interval)
+			if result != td.want {
+				t.Errorf("Incorrect return %d in Inc(%d,%d). Expecting %d\n",
+					result, td.target, td.interval, td.want)
+			}
+		})
+	}
+}
+
+// // StrToSlice convert string sentence to slice.
+// func StrToSlice(src string, delimiter string) []string {
+// 	choiceSlice := strings.Split(src, delimiter)
+// 	return choiceSlice
 // }
+func TestStrToSlice(t *testing.T) {
+	var multipleTest = []struct {
+		src       string
+		delimiter string
+		want      []string
+	}{
+		{"1,2,3,4,5", ",", []string{"1", "2", "3", "4", "5"}},
+		{"apple|boy|cat|dog|elephant", "|", []string{"apple", "boy", "cat", "dog", "elephant"}},
+	}
+	for _, td := range multipleTest {
+		t.Run("TestStrToSlice", func(t *testing.T) {
+			result := StrToSlice(td.src, td.delimiter)
+			//reflect.DeepEqual() return bool, poor performance but suitable for test case
+			if !reflect.DeepEqual(result, td.want) {
+				t.Errorf("Incorrect return \"%+v\" in StrToSlice(\"%s\",\"%s\"). Expecting \"%+v\"\n",
+					result, td.src, td.delimiter, td.want)
+			}
+		})
+	}
+}
