@@ -36,6 +36,10 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
+      - name: Sleep for 30 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '30s'
       - run: mysql -h 127.0.0.1 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
 
       - name: Run Tests
