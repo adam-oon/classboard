@@ -39,7 +39,8 @@ jobs:
           encodedString: ${{ secrets.SQL }} 
       - name: Import SQL
         run: |
-          docker exec $(docker ps -q) mysql -u ${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }}
+          docker ps
+          docker exec $(docker ps -q) mysql -u ${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }} --host 127.0.0.1 --port 3306
       - name: Run Tests
         run: |
           go test -v ./...
