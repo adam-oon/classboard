@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Code
         uses: actions/checkout@v2
@@ -16,6 +16,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.15'
+      - name: Create env file
+        run: |
+          ls
+          touch .env
+          echo DB_USER=${{ secrets.DB_USER }} >> .env
+          echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
+          echo DB_IP=${{ secrets.DB_IP }} >> .env
+          echo DB_SCHEMA=${{ secrets.DB_SCHEMA }} >> .env
       - name: Install Dependencies
         id: InstallDeps
         run: |
