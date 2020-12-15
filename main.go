@@ -5,7 +5,6 @@ import (
 	"classboard/helper"
 	"database/sql"
 	"net/http"
-	"os"
 	"text/template"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -37,7 +36,7 @@ func main() {
 
 	router := router()
 
-	if fatalErr := http.ListenAndServeTLS(":8080", os.Getenv("CERTIFICATE"), os.Getenv("PRIVATE_KEY"), router); fatalErr != nil {
+	if fatalErr := http.ListenAndServe(":8080", router); fatalErr != nil {
 		Error.Fatalln(fatalErr)
 	}
 }
