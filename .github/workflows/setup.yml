@@ -42,7 +42,7 @@ jobs:
       - name: Import SQL
         run: |
           docker ps
-          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -h 0.0.0.0 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
+          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -h 0.0.0.0 -port 3306 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
           go test -v ./...
