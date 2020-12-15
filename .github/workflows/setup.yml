@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.15'
-      - name: Create env file
+      - name: Create .env file
         run: |
           ls
           touch .env
@@ -24,6 +24,13 @@ jobs:
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
           echo DB_IP=${{ secrets.DB_IP }} >> .env
           echo DB_SCHEMA=${{ secrets.DB_SCHEMA }} >> .env
+      - name: Setup MySQL DB
+      - uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql database: ${{ secrets.DB_SCHEMA }} # Default value is "test".
+          mysql root password: ${{ secrets.DB_PASSWORD } # Required if "mysql user" is empty, default is empty.
+          mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
+          mysql password: ${{ secrets.DB_PASSWORD } # Required if "mysql user" exists.
       - name: Install Dependencies
         id: InstallDeps
         run: |
