@@ -27,7 +27,7 @@ jobs:
         name: Test Go Goblin
         run: |
           go test -v
-          go test -v | go2xunit > report.xml            
+          go test -v ./... | go2xunit > report.xml            
       - if: ${{failure()}}
         name: Create Issues
         uses: nashmaniac/create-issue-action@v1.1
