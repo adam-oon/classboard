@@ -23,6 +23,12 @@ jobs:
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
           echo DB_IP=${{ secrets.DB_IP }} >> .env
           echo DB_SCHEMA=${{ secrets.DB_SCHEMA }} >> .env
+      - name: Create sql file
+        id: write_sql_file
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
+          encodedString: ${{ secrets.SQL }} 
       - name: Setup MySQL DB
         uses: mirromutth/mysql-action@v1.1
         with:
@@ -30,14 +36,7 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
-      - if: success()
-        name: Create sql file
-        id: write_sql_file
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
-          encodedString: ${{ secrets.SQL }} 
-      - run: mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
+      - run: mysql -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
 
       - name: Run Tests
         run: |
