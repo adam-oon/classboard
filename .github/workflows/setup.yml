@@ -30,13 +30,16 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
-      - name: Create SQL file
-        run: |
-          docker -v
-          touch classboard.sql
-          echo DB_USER=${{ secrets.SQL }} >> classboard.sql
-
+      - if: success()
+        name: Create sql file
+        id: write_sql_file
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
+          encodedString: ${{ secrets.SQL }} 
+        
       - name: Run Tests
         run: |
-              go test -v ./...
+          docker ps
+          go test -v ./...
 
