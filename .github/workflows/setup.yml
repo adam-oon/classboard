@@ -39,7 +39,7 @@ jobs:
           encodedString: ${{ secrets.SQL }} 
       - name: Import SQL
         run: |
-          docker exec -i $(docker ps -q) mysql -u ${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }}
+          docker exec $(docker ps -q) mysql -u ${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }}
       - name: Run Tests
         run: |
           go test -v ./...
