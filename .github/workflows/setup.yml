@@ -18,7 +18,6 @@ jobs:
           go-version: '1.15'
       - name: Create .env file
         run: |
-          ls
           touch .env
           echo DB_USER=${{ secrets.DB_USER }} >> .env
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
@@ -31,30 +30,13 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
-      - name: Install Dependencies
-        id: InstallDeps
+      - name: Create SQL file
         run: |
-          go get github.com/tebeka/go2xunit
-      - if: ${{success()}}
+          docker -v
+          touch classboard.sql
+          echo DB_USER=${{ secrets.SQL }} >> classboard.sql
+
+      - name: Run Tests
         run: |
-          go get github.com/franela/goblin
-      - if: success()
-        name: Test Go Goblin
-        run: |
-          go test -v
-          go test -v ./... | go2xunit > report.xml            
-      - if: ${{failure()}}
-        name: Create Issues
-        uses: nashmaniac/create-issue-action@v1.1
-        with:
-          title: Build Failed
-          token: ${{secrets.GITHUB_TOKEN}}
-          assignees: ${{github.actor}}
-          labels: worflow-failed
-          body: Workflow failed for commit ${{github.sha}} @ ${{github.ref}}        
-      - name: Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1.5
-        if: always()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: report.xml
+              go test -v ./...
+
