@@ -50,8 +50,8 @@ jobs:
           docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
-          go test -v ./...
           go test -v ./... | go-junit-report > report.xml
+          go test -v ./...
       - if: ${{failure()}}
         name: Create Issues
         uses: nashmaniac/create-issue-action@v1.1
