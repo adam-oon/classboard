@@ -28,9 +28,9 @@ jobs:
         uses: mirromutth/mysql-action@v1.1
         with:
           mysql database: ${{ secrets.DB_SCHEMA }} # Default value is "test".
-          mysql root password: ${{ secrets.DB_PASSWORD } # Required if "mysql user" is empty, default is empty.
+          mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
-          mysql password: ${{ secrets.DB_PASSWORD } # Required if "mysql user" exists.
+          mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
       - name: Install Dependencies
         id: InstallDeps
         run: |
