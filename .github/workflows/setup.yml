@@ -30,10 +30,14 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
-      - name: Sleep for 20 seconds # wait to allow docker run completely
+      - name: Install Dependencies For Testing
+        id: install_deps
+        run: |
+          go get github.com/jstemmer/go-junit-report
+      - name: Sleep for 10 seconds # wait to allow docker run completely
         uses: jakejarvis/wait-action@master
         with:
-          time: '20s' 
+          time: '10s' 
       - name: Create sql file
         id: write_sql_file
         uses: timheuer/base64-to-file@v1
@@ -46,7 +50,7 @@ jobs:
           docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
-          go test -v ./...
+          go test -v ./... | go-junit-report > report.xml
       - if: ${{failure()}}
         name: Create Issues
         uses: nashmaniac/create-issue-action@v1.1
