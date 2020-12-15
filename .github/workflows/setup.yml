@@ -40,7 +40,7 @@ jobs:
       - name: Import SQL
         run: |
           docker ps
-          docker exec $(docker ps -q) mysql -u ${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }} --port 3306
+          docker exec -i $(docker ps -q) sh -c 'exec mysql -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
           go test -v ./...
