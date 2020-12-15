@@ -39,11 +39,8 @@ jobs:
         with:
           fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
           encodedString: ${{ secrets.SQL }} 
-      - if: success()
-        name: Import SQL
-        run: |
-          docker ps
-          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
+      - run: mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
+
       - name: Run Tests
         run: |
           go test -v ./...
