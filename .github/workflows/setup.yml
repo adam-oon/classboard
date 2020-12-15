@@ -16,10 +16,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.15'
-      - if : ${{success()}}
-        name: Run version check
-        run: |
-          go run main.go
       - name: Install Dependencies
         id: InstallDeps
         run: |
