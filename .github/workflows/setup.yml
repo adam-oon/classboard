@@ -23,12 +23,6 @@ jobs:
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
           echo DB_IP=${{ secrets.DB_IP }} >> .env
           echo DB_SCHEMA=${{ secrets.DB_SCHEMA }} >> .env
-      - name: Create sql file
-        id: write_sql_file
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
-          encodedString: ${{ secrets.SQL }} 
       - name: Setup MySQL DB
         uses: mirromutth/mysql-action@v1.1
         with:
@@ -36,12 +30,21 @@ jobs:
           mysql root password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" is empty, default is empty.
           mysql user: ${{ secrets.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database.
           mysql password: ${{ secrets.DB_PASSWORD }} # Required if "mysql user" exists.
-      - name: Sleep for 30 seconds
+      - name: Sleep for 20 seconds # wait to allow docker run completely
         uses: jakejarvis/wait-action@master
         with:
-          time: '30s'
-      - run: mysql -h 127.0.0.1 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
-
+          time: '20s' 
+      - name: Create sql file
+        id: write_sql_file
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'classboard.sql' # use ${{ steps.write_sql_file.outputs.filePath }} to retrieve file
+          encodedString: ${{ secrets.SQL }} 
+      - if: success()
+        name: Import SQL
+        run: |
+          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}  
+      #- run: mysql -h 127.0.0.1 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
           go test -v ./...
