@@ -39,7 +39,7 @@ jobs:
           encodedString: ${{ secrets.SQL }} 
       - name: Import SQL
         run: |
-          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
+          docker exec -i $(docker ps -q) sh -c 'exec mysql --protocol tcp -h 127.0.0.1 -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }}' < ${{ steps.write_sql_file.outputs.filePath }}
       - name: Run Tests
         run: |
           go test -v ./...
