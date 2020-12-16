@@ -86,11 +86,6 @@ func TestInc(t *testing.T) {
 	}
 }
 
-// // StrToSlice convert string sentence to slice.
-// func StrToSlice(src string, delimiter string) []string {
-// 	choiceSlice := strings.Split(src, delimiter)
-// 	return choiceSlice
-// }
 func TestStrToSlice(t *testing.T) {
 	var multipleTest = []struct {
 		src       string
