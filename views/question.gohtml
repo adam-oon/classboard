@@ -8,7 +8,7 @@
             $('#responseMessage').html("");
 
             $.ajax({
-                url: 'http://localhost:8080/api/v1/{{.Classroom.Id}}/question/'+id,
+                url: 'https://localhost:8080/api/v1/{{.Classroom.Id}}/question/'+id,
                 type: 'delete',
                 success: function (response) {
                     if (response != undefined) {

@@ -36,7 +36,8 @@ func main() {
 
 	router := router()
 
-	if fatalErr := http.ListenAndServe(":8080", router); fatalErr != nil {
+	// self-signed certificate is used to initialize HTTPS connection
+	if fatalErr := http.ListenAndServeTLS(":8080", "server/cert/cert.pem", "server/cert/key.pem", router); fatalErr != nil {
 		Error.Fatalln(fatalErr)
 	}
 }
