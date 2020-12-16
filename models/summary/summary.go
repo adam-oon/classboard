@@ -24,7 +24,7 @@ func CalculateRatio(question_nums, answer_nums int) float64 {
 
 	participation = an / qn * 100
 
-	// to 2 decimal
+	// to 2 decimal place
 	participation = math.Round(participation*100) / 100
 	return participation
 }

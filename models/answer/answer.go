@@ -1,3 +1,6 @@
+/*
+	Package answer provides SQL query for answers table.
+*/
 package answer
 
 import (
@@ -15,6 +18,7 @@ type AnswerModel struct {
 	Db *sql.DB
 }
 
+// SaveAnswer insert Answer struct into DB.
 func (model AnswerModel) SaveAnswer(answer Answer) error {
 	_, err := model.Db.Exec("INSERT INTO answers (question_id, user_id, answer,is_correct) VALUES (?,?,?,?)",
 		answer.Question_id, answer.User_id, answer.Answer, answer.Is_correct)
@@ -25,6 +29,7 @@ func (model AnswerModel) SaveAnswer(answer Answer) error {
 	return nil
 }
 
+// GetAnswer retrieve Answer from DB based on question_id and user_id.
 func (model AnswerModel) GetAnswer(question_id int, user_id int) (*Answer, error) {
 	var answer Answer
 	row := model.Db.QueryRow("SELECT * from answers WHERE question_id = ? AND user_id = ?", question_id, user_id)
@@ -40,6 +45,7 @@ func (model AnswerModel) GetAnswer(question_id int, user_id int) (*Answer, error
 	}
 }
 
+// DeleteAnswer remove Answer from DB based on question_id.
 func (model AnswerModel) DeleteAnswer(question_id int) error {
 	_, err := model.Db.Exec("DELETE FROM answers WHERE question_id =?", question_id)
 	if err != nil {

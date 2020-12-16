@@ -1,3 +1,6 @@
+/*
+	Package question provides SQL query for questions table.
+*/
 package question
 
 import (
@@ -26,6 +29,7 @@ type QuestionModel struct {
 	Db *sql.DB
 }
 
+// SaveQuestion insert QuestionInput into DB.
 func (model QuestionModel) SaveQuestion(question QuestionInput) error {
 	_, err := model.Db.Exec("INSERT INTO questions (classroom_id, question, type,choice, solution) VALUES (?,?,?,?,?)", question.Classroom_id, question.Question, question.Type, question.Choice, question.Solution)
 
@@ -35,6 +39,7 @@ func (model QuestionModel) SaveQuestion(question QuestionInput) error {
 	return nil
 }
 
+// GetQuestionsByClassroomId retrieve []Question from DB based on classroom_id.
 func (model QuestionModel) GetQuestionsByClassroomId(classroom_id string) ([]Question, error) {
 	var questions []Question
 	rows, err := model.Db.Query("SELECT * from questions WHERE classroom_id = ?", classroom_id)
@@ -55,6 +60,7 @@ func (model QuestionModel) GetQuestionsByClassroomId(classroom_id string) ([]Que
 	return questions, nil
 }
 
+// GetQuestion retrieve Question details from DB based on question_id.
 func (model QuestionModel) GetQuestion(question_id int) (Question, error) {
 
 	rows, err := model.Db.Query("SELECT * from questions WHERE id = ?", question_id)
@@ -74,6 +80,7 @@ func (model QuestionModel) GetQuestion(question_id int) (Question, error) {
 	return question, nil
 }
 
+// DeleteQuestion remove Question from DB based on question_id.
 func (model QuestionModel) DeleteQuestion(question_id int) error {
 
 	result, err := model.Db.Exec("DELETE FROM questions WHERE id =?", question_id)

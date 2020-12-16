@@ -1,3 +1,6 @@
+/*
+	Package user provides SQL query for users table.
+*/
 package user
 
 import (
@@ -17,6 +20,7 @@ type UserModel struct {
 	Db *sql.DB
 }
 
+// CheckUserByUsername checks user's existence in DB based on username given.
 func (model UserModel) CheckUserByUsername(username string) (int, error) {
 	var count int
 	rows, err := model.Db.Query("SELECT COUNT(username) as totalUsername FROM users WHERE username = ?", username)
@@ -35,6 +39,7 @@ func (model UserModel) CheckUserByUsername(username string) (int, error) {
 	return count, nil
 }
 
+// GetUserByUsername retrieve User detail from DB based on username given.
 func (model UserModel) GetUserByUsername(username string) (User, error) {
 	rows, err := model.Db.Query("SELECT * FROM users WHERE username = ?", username)
 	defer rows.Close()
@@ -53,6 +58,7 @@ func (model UserModel) GetUserByUsername(username string) (User, error) {
 	return user, nil
 }
 
+// GetUser retrieve User detail from DB based on user_id.
 func (model UserModel) GetUser(user_id int) (User, error) {
 	rows, err := model.Db.Query("SELECT * FROM users WHERE id = ?", user_id)
 	defer rows.Close()
@@ -72,6 +78,7 @@ func (model UserModel) GetUser(user_id int) (User, error) {
 	return user, nil
 }
 
+// SaveUser takes in details and save as user data into DB.
 func (model UserModel) SaveUser(username, password, usertype, name string) error {
 	_, err := model.Db.Exec("INSERT INTO users ( username, password, type, name) VALUES (?, ?, ?,?)",
 		username, password, usertype, name)

@@ -6,7 +6,6 @@ import (
 	usermodel "classboard/models/user"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -222,14 +221,12 @@ func getSessionUser(req *http.Request) usermodel.User {
 	if err != nil {
 		Error.Println(err)
 	}
-	log.Println("tset")
 	userModel := usermodel.UserModel{
 		Db: db,
 	}
 	sessionModel := sessionmodel.SessionModel{
 		Db: db,
 	}
-	log.Println("tset2")
 	user_id, err := sessionModel.GetUserID(myCookie.Value)
 	if err != nil {
 		Info.Println(err)
@@ -238,7 +235,6 @@ func getSessionUser(req *http.Request) usermodel.User {
 	if err != nil {
 		Info.Println(err)
 	}
-	log.Println("tset3")
 	return user
 }
 
@@ -260,7 +256,6 @@ func isLoggedIn(req *http.Request) bool {
 		Db: db,
 	}
 	ok := sessionModel.CheckSession(myCookie.Value)
-	log.Println(ok)
 	return ok
 }
 

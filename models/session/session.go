@@ -1,3 +1,6 @@
+/*
+	Package session provides SQL query for sessions table.
+*/
 package session
 
 import (
@@ -14,6 +17,7 @@ type SessionModel struct {
 	Db *sql.DB
 }
 
+// CheckSession checks session existence in DB.
 func (model SessionModel) CheckSession(session_id string) bool {
 	rows, err := model.Db.Query("SELECT * FROM sessions WHERE session_id = ?", session_id)
 	defer rows.Close()
@@ -36,6 +40,7 @@ func (model SessionModel) CheckSession(session_id string) bool {
 	return false
 }
 
+// GetUserID retrieve user_id in DB based on session_id.
 func (model SessionModel) GetUserID(session_id string) (int, error) {
 	rows, err := model.Db.Query("SELECT user_id FROM sessions WHERE session_id = ?", session_id)
 	defer rows.Close()
@@ -54,6 +59,7 @@ func (model SessionModel) GetUserID(session_id string) (int, error) {
 	return user_id, nil
 }
 
+// DeleteSessionByUserId remove session from DB based on user_id.
 func (model SessionModel) DeleteSessionByUserId(user_id int) error {
 	result, err := model.Db.Exec("DELETE FROM sessions WHERE user_id =?", user_id)
 	if err != nil {
@@ -67,6 +73,7 @@ func (model SessionModel) DeleteSessionByUserId(user_id int) error {
 	}
 }
 
+// DeleteSessionBySessionId remove session from DB based on session_id.
 func (model SessionModel) DeleteSessionBySessionId(session_id string) error {
 	result, err := model.Db.Exec("DELETE FROM sessions WHERE session_id =?", session_id)
 	if err != nil {
@@ -80,6 +87,7 @@ func (model SessionModel) DeleteSessionBySessionId(session_id string) error {
 	}
 }
 
+// SaveSession insert Session with session_id and user_id into DB.
 func (model SessionModel) SaveSession(session Session) error {
 	_, err := model.Db.Exec("INSERT INTO sessions (session_id, user_id) VALUES (?,?)", session.Session_id, session.User_id)
 	if err != nil {

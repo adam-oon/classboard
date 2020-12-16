@@ -1,5 +1,5 @@
 /*
-	Package dictionary provides Dictionary data structure for holding name and Booking List data.
+	Package dictionary provides Dictionary data structure for holding participation data.
 */
 package dictionary
 
@@ -11,7 +11,7 @@ import (
 
 // Provides Dictionary structure
 
-type NameKey string // user's name represent dictkey
+type NameKey string // user's name represent Dictionary Key
 
 type ResultMap struct {
 	Item map[int]int
@@ -23,19 +23,9 @@ type Dictionary struct {
 	lock sync.RWMutex
 }
 
-// SetValue inserts int type with question_id integer in ResultMap.
-func (rm *ResultMap) SetValue(question_id int, result int) {
-	defer helper.CheckPanic()
-
-	rm.lock.Lock()
-	defer rm.lock.Unlock()
-
-	if rm.Item == nil {
-		rm.Item = make(map[int]int)
-	}
-	rm.Item[question_id] = result
-}
-
+/*
+	Dictionary methods
+*/
 // SetResultMap inserts ResultMap type with NameKey in Dictionary.
 func (d *Dictionary) SetResultMap(name NameKey, result *ResultMap) {
 	defer helper.CheckPanic()
@@ -95,4 +85,20 @@ func (d *Dictionary) GetKeys() []NameKey {
 		dictKeys = append(dictKeys, key)
 	}
 	return dictKeys
+}
+
+/*
+	ResultMap methods
+*/
+// SetValue inserts int type with question_id integer in ResultMap.
+func (rm *ResultMap) SetValue(question_id int, result int) {
+	defer helper.CheckPanic()
+
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
+
+	if rm.Item == nil {
+		rm.Item = make(map[int]int)
+	}
+	rm.Item[question_id] = result
 }
