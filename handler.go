@@ -9,7 +9,6 @@ import (
 	usermodel "classboard/models/user"
 	userclassmodel "classboard/models/userclass"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -672,7 +671,6 @@ func answerHandler(res http.ResponseWriter, req *http.Request) {
 		var answerJSON AnswerJSON
 		if err == nil {
 			err := json.Unmarshal(reqBody, &answerJSON)
-			fmt.Println(err)
 			if err != nil {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the answer info is incomplete"})
