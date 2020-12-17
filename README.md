@@ -5,7 +5,7 @@ For lecturer & student who seek for engagement in online learning,
 Unlike current apps that require specific school login with complicated setup,
 Our project is lightweight & easy to setup in minutes.
 
-# .env guide
+### .env guide
 Following environment variables are required to startup the program
 DB_USER=<database_username>
 DB_PASSWORD=<database_password>
