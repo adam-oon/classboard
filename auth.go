@@ -259,7 +259,6 @@ func isStudent(user_type string) bool {
 func isLoggedIn(req *http.Request) bool {
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
-		Error.Println(err)
 		return false
 	}
 
