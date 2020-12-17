@@ -36,8 +36,10 @@ func main() {
 
 	router := router()
 
+	var port string = "8080"
+	Info.Println("Booting the server at port", port)
 	// self-signed certificate is used to initialize HTTPS connection
-	if fatalErr := http.ListenAndServeTLS(":8080", "server/cert/cert.pem", "server/cert/key.pem", router); fatalErr != nil {
+	if fatalErr := http.ListenAndServeTLS(":"+port, "server/cert/cert.pem", "server/cert/key.pem", router); fatalErr != nil {
 		Error.Fatalln(fatalErr)
 	}
 }

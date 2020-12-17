@@ -167,10 +167,10 @@ func loginHandler(res http.ResponseWriter, req *http.Request) {
 		myCookie := &http.Cookie{
 			Name:     "myCookie",
 			Value:    id.String(),
-			Expires:  time.Now().Add(2 * time.Hour),
-			HttpOnly: true,
+			Expires:  time.Now().Add(2 * time.Hour), // 2 hrs
+			HttpOnly: true,                          // cannot be used by javascript
+			Secure:   true,                          // send through HTTPS only
 			Domain:   "localhost",
-			// Secure:   true,
 		}
 		http.SetCookie(res, myCookie)
 
