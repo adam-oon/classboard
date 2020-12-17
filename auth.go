@@ -52,6 +52,7 @@ func registerHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &newUser)
 			if err != nil {
+				Warning.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the user info is incomplete"})
 				return
@@ -67,6 +68,7 @@ func registerHandler(res http.ResponseWriter, req *http.Request) {
 
 			err = helper.CheckPasswordStrength(newUser.Password)
 			if err != nil {
+				Info.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
 				return
@@ -85,6 +87,7 @@ func registerHandler(res http.ResponseWriter, req *http.Request) {
 			if count == 0 {
 				bPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.MinCost)
 				if err != nil {
+					Warning.Println(err)
 					res.WriteHeader(http.StatusInternalServerError)
 					json.NewEncoder(res).Encode(ResMessage{ResponseText: "Internal Server Error. Please contact system administrator!"})
 					return
@@ -130,6 +133,7 @@ func loginHandler(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		err := json.Unmarshal(reqBody, &userLogin)
 		if err != nil {
+			Warning.Println(err)
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
 			return
@@ -151,6 +155,7 @@ func loginHandler(res http.ResponseWriter, req *http.Request) {
 		// verify user
 		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userLogin.Password))
 		if err != nil {
+			Warning.Println(err)
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
 			return
@@ -188,6 +193,11 @@ func loginHandler(res http.ResponseWriter, req *http.Request) {
 
 		res.WriteHeader(http.StatusOK)
 		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Welcome User!"})
+	} else {
+		Warning.Println(err)
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Username and/or password do not match"})
+		return
 	}
 }
 
@@ -249,6 +259,7 @@ func isStudent(user_type string) bool {
 func isLoggedIn(req *http.Request) bool {
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
+		Error.Println(err)
 		return false
 	}
 

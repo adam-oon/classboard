@@ -23,6 +23,9 @@ type ResMessage struct {
 	ResponseText string
 }
 
+/*
+	http handler
+*/
 func classroomHandler(res http.ResponseWriter, req *http.Request) {
 	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
@@ -52,6 +55,7 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &classroomJSON)
 			if err != nil {
+				Warning.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
 				return
@@ -76,6 +80,7 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 			}
 			err = classroomModel.SaveClassroom(classroom)
 			if err != nil {
+				Info.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
 
@@ -83,8 +88,12 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				res.WriteHeader(http.StatusCreated)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Classroom created!"})
 			}
+		} else {
+			Warning.Println(err)
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
+			return
 		}
-		return
 	}
 
 	// put
@@ -98,6 +107,7 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &classroomJSON)
 			if err != nil {
+				Warning.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
 				return
@@ -114,11 +124,18 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				Db: db,
 			}
 			classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+			if err != nil {
+				Info.Println(err)
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom is not found"})
+				return
+			}
 			classroom.Title = classroomJSON.Title
 			classroom.Code = classroomJSON.Code
 
 			err = classroomModel.UpdateClassroom(classroom)
 			if err != nil {
+				Info.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
 				return
@@ -126,6 +143,11 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				res.WriteHeader(http.StatusCreated)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Classroom updated!"})
 			}
+		} else {
+			Warning.Println(err)
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
+			return
 		}
 	}
 }
@@ -174,6 +196,7 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &questionJSON)
 			if err != nil {
+				Warning.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
 				return
@@ -221,6 +244,7 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 			}
 			err = questionModel.SaveQuestion(questionInput)
 			if err != nil {
+				Info.Println(err)
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
 				return
@@ -228,10 +252,217 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 				res.WriteHeader(http.StatusCreated)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Question created!"})
 			}
+		} else {
+			Warning.Println(err)
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+			return
 		}
 	}
 }
 
+func joinClassHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
+	user := getSessionUser(req)
+
+	if isLecturer(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	if req.Method == http.MethodPost {
+		classroom_id := params["classroom_id"]
+
+		if strings.TrimSpace(classroom_id) == "" {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom id is incomplete"})
+			return
+		}
+
+		userclassModel := userclassmodel.UserClassModel{
+			Db: db,
+		}
+		err := userclassModel.JoinClass(user.Id, classroom_id)
+		if err != nil {
+			Info.Println(err)
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
+			return
+		} else {
+			res.WriteHeader(http.StatusCreated)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Class joined!"})
+		}
+	}
+}
+
+func questionHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
+	user := getSessionUser(req)
+
+	if isStudent(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	classroomModel := classroommodel.ClassroomModel{
+		Db: db,
+	}
+	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
+	if err != nil {
+		Info.Println(err)
+	}
+	owner_id := classroom.User_id
+
+	if user.Id != owner_id {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	switch req.Method {
+	case "DELETE":
+		question_id, err := strconv.Atoi(params["question_id"])
+		if err != nil {
+			Warning.Println(err)
+			res.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+			return
+		}
+
+		// delete student answer first, then delete question
+		answerModel := answermodel.AnswerModel{
+			Db: db,
+		}
+		questionModel := questionmodel.QuestionModel{
+			Db: db,
+		}
+
+		err = answerModel.DeleteAnswer(question_id)
+		if err != nil {
+			Info.Println(err)
+			res.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+			return
+		}
+
+		err = questionModel.DeleteQuestion(question_id)
+		if err != nil {
+			Info.Println(err)
+			res.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Question Deleted"})
+
+	}
+
+}
+
+func answerHandler(res http.ResponseWriter, req *http.Request) {
+	if !isLoggedIn(req) {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	user := getSessionUser(req)
+
+	if isLecturer(user.Type) {
+		res.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
+		return
+	}
+
+	if req.Method == http.MethodPost && req.Header.Get("Content-type") == "application/json" {
+		reqBody, err := ioutil.ReadAll(req.Body)
+		type AnswerJSON struct {
+			Question_id int
+			Answer      string
+		}
+		var answerJSON AnswerJSON
+		if err == nil {
+			err := json.Unmarshal(reqBody, &answerJSON)
+			if err != nil {
+				Warning.Println(err)
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the answer info is incomplete"})
+				return
+			}
+
+			questionModel := questionmodel.QuestionModel{
+				Db: db,
+			}
+			answerModel := answermodel.AnswerModel{
+				Db: db,
+			}
+
+			question, err := questionModel.GetQuestion(answerJSON.Question_id)
+			if err != nil {
+				Info.Println(err)
+			}
+
+			var isCorrect bool
+			if question.Solution == answerJSON.Answer {
+				isCorrect = true
+			}
+			type Answer struct {
+				Question_id int
+				User_id     int
+				Answer      string
+				Is_correct  bool
+			}
+			answer := answermodel.Answer{
+				Question_id: answerJSON.Question_id,
+				User_id:     user.Id,
+				Answer:      answerJSON.Answer,
+				Is_correct:  isCorrect,
+			}
+
+			err = answerModel.SaveAnswer(answer)
+			if err != nil {
+				Info.Println(err)
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
+				return
+			} else {
+				var result string
+				if isCorrect {
+					result = "Correct Answer!"
+				} else {
+					result = "Incorrect Answer! Correct Answer is " + question.Solution
+				}
+				res.WriteHeader(http.StatusOK)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: result})
+				return
+			}
+		} else {
+			Warning.Println(err)
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the answer info is incomplete"})
+			return
+		}
+	}
+}
+
+/*
+	page handler
+*/
 func indexPage(res http.ResponseWriter, req *http.Request) {
 	// return to dashboard if login
 	if isLoggedIn(req) {
@@ -469,137 +700,6 @@ func classroomQuestionPage(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func addQuestionPage(res http.ResponseWriter, req *http.Request) {
-	if !isLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-	params := mux.Vars(req)
-	user := getSessionUser(req)
-
-	var template string
-	if isLecturer(user.Type) {
-		template = "question_add.gohtml"
-	} else if isStudent(user.Type) {
-		template = "403.gohtml"
-	}
-
-	templateErr := tpl.ExecuteTemplate(res, template, params["classroom_id"])
-	if templateErr != nil {
-		Warning.Println(templateErr)
-	}
-}
-
-func joinClassHandler(res http.ResponseWriter, req *http.Request) {
-	if !isLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req)
-
-	user := getSessionUser(req)
-
-	if isLecturer(user.Type) {
-		res.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-		return
-	}
-
-	if req.Method == http.MethodPost {
-		classroom_id := params["classroom_id"]
-
-		if strings.TrimSpace(classroom_id) == "" {
-			res.WriteHeader(http.StatusUnprocessableEntity)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom id is incomplete"})
-			return
-		}
-
-		userclassModel := userclassmodel.UserClassModel{
-			Db: db,
-		}
-		err := userclassModel.JoinClass(user.Id, classroom_id)
-		if err != nil {
-			res.WriteHeader(http.StatusUnprocessableEntity)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
-			return
-		} else {
-			res.WriteHeader(http.StatusCreated)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Class joined!"})
-		}
-	}
-}
-
-func questionHandler(res http.ResponseWriter, req *http.Request) {
-	if !isLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(req)
-	user := getSessionUser(req)
-
-	if isStudent(user.Type) {
-		res.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-		return
-	}
-
-	classroomModel := classroommodel.ClassroomModel{
-		Db: db,
-	}
-	classroom, err := classroomModel.GetClassroom(params["classroom_id"])
-	if err != nil {
-		Info.Println(err)
-	}
-	owner_id := classroom.User_id
-
-	if user.Id != owner_id {
-		res.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-		return
-	}
-
-	switch req.Method {
-	case "DELETE":
-		question_id, err := strconv.Atoi(params["question_id"])
-		if err != nil {
-			res.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-			return
-		}
-
-		// delete student answer first, then delete question
-		answerModel := answermodel.AnswerModel{
-			Db: db,
-		}
-		questionModel := questionmodel.QuestionModel{
-			Db: db,
-		}
-
-		err = answerModel.DeleteAnswer(question_id)
-		if err != nil {
-			res.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-			return
-		}
-
-		err = questionModel.DeleteQuestion(question_id)
-		if err != nil {
-			res.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-			return
-		}
-
-		res.WriteHeader(http.StatusOK)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "Question Deleted"})
-
-	}
-
-}
-
 func questionPage(res http.ResponseWriter, req *http.Request) {
 	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
@@ -640,7 +740,7 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 	} else if isStudent(user.Type) {
 		answer, err := answerModel.GetAnswer(question_id, user.Id)
 		if err != nil {
-			Warning.Println(err)
+			Info.Println(err)
 		}
 
 		var templateErr error
@@ -674,82 +774,24 @@ func questionPage(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func answerHandler(res http.ResponseWriter, req *http.Request) {
+func addQuestionPage(res http.ResponseWriter, req *http.Request) {
 	if !isLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
-
-	res.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(req)
 	user := getSessionUser(req)
 
+	var template string
 	if isLecturer(user.Type) {
-		res.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(res).Encode(ResMessage{ResponseText: "403 Forbidden Action"})
-		return
+		template = "question_add.gohtml"
+	} else if isStudent(user.Type) {
+		template = "403.gohtml"
 	}
 
-	if req.Method == http.MethodPost && req.Header.Get("Content-type") == "application/json" {
-		reqBody, err := ioutil.ReadAll(req.Body)
-		type AnswerJSON struct {
-			Question_id int
-			Answer      string
-		}
-		var answerJSON AnswerJSON
-		if err == nil {
-			err := json.Unmarshal(reqBody, &answerJSON)
-			if err != nil {
-				res.WriteHeader(http.StatusUnprocessableEntity)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the answer info is incomplete"})
-				return
-			}
-
-			questionModel := questionmodel.QuestionModel{
-				Db: db,
-			}
-			answerModel := answermodel.AnswerModel{
-				Db: db,
-			}
-
-			question, err := questionModel.GetQuestion(answerJSON.Question_id)
-			if err != nil {
-				Info.Println(err)
-			}
-
-			var isCorrect bool
-			if question.Solution == answerJSON.Answer {
-				isCorrect = true
-			}
-			type Answer struct {
-				Question_id int
-				User_id     int
-				Answer      string
-				Is_correct  bool
-			}
-			answer := answermodel.Answer{
-				Question_id: answerJSON.Question_id,
-				User_id:     user.Id,
-				Answer:      answerJSON.Answer,
-				Is_correct:  isCorrect,
-			}
-
-			err = answerModel.SaveAnswer(answer)
-			if err != nil {
-				res.WriteHeader(http.StatusUnprocessableEntity)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: err.Error()})
-				return
-			} else {
-				var result string
-				if isCorrect {
-					result = "Correct Answer!"
-				} else {
-					result = "Incorrect Answer! Correct Answer is " + question.Solution
-				}
-				res.WriteHeader(http.StatusOK)
-				json.NewEncoder(res).Encode(ResMessage{ResponseText: result})
-				return
-			}
-		}
+	templateErr := tpl.ExecuteTemplate(res, template, params["classroom_id"])
+	if templateErr != nil {
+		Warning.Println(templateErr)
 	}
 }
 
