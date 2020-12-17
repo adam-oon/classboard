@@ -57,6 +57,13 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
+			// validate for empty value
+			if strings.TrimSpace(classroomJSON.Title) == "" || strings.TrimSpace(classroomJSON.Code) == "" {
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
+				return
+			}
+
 			classroom := classroommodel.Classroom{
 				Id:      id.String(),
 				User_id: user.Id,
@@ -91,6 +98,13 @@ func classroomHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &classroomJSON)
 			if err != nil {
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
+				return
+			}
+
+			// validate for empty value
+			if strings.TrimSpace(classroomJSON.Title) == "" || strings.TrimSpace(classroomJSON.Code) == "" {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom info is incomplete"})
 				return
@@ -160,6 +174,13 @@ func addQuestionHandler(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			err := json.Unmarshal(reqBody, &questionJSON)
 			if err != nil {
+				res.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
+				return
+			}
+
+			// validate for empty value
+			if strings.TrimSpace(questionJSON.Question) == "" || strings.TrimSpace(questionJSON.Type) == "" || strings.TrimSpace(questionJSON.Choice) == "" || strings.TrimSpace(questionJSON.Solution) == "" {
 				res.WriteHeader(http.StatusUnprocessableEntity)
 				json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the question info is incomplete"})
 				return
@@ -488,6 +509,12 @@ func joinClassHandler(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method == http.MethodPost {
 		classroom_id := params["classroom_id"]
+
+		if strings.TrimSpace(classroom_id) == "" {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(res).Encode(ResMessage{ResponseText: "Sorry the classroom id is incomplete"})
+			return
+		}
 
 		userclassModel := userclassmodel.UserClassModel{
 			Db: db,

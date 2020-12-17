@@ -2,8 +2,11 @@
 <html lang="en">
     {{ template "script"}}
     <script>
-
         function joinClassroom(event) {
+            if ($("#classroom_id").val().trim() == "" ){
+                $('#responseMessage').html("<b style='color:red'>Sorry the classroom id is incomplete</b>");
+                return
+            }
             $('#responseMessage').html("");
 
             event.preventDefault();
@@ -11,7 +14,6 @@
                 url: 'https://localhost:8080/api/v1/user_class/'+ $("#classroom_id").val(),
                 type: 'post',
                 success: function (response) {
-                console.log(response)
                     $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
                     $("#classroom_join input").prop("disabled", true);
                     function pageRedirect() {
@@ -20,13 +22,10 @@
                     setTimeout(pageRedirect, 2000);
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
-                console.log(XMLHttpRequest)
                     $('#responseMessage').html("<b style='color:red'>"+XMLHttpRequest.responseJSON.ResponseText+"</b>");
                 },
             });
         }
-
-        
     </script>
     {{ template "header"}}
 

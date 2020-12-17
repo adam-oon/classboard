@@ -4,12 +4,18 @@
     <script>
 
         function addQuestion(event) {
-            var classroom = {
+            var question = {
                 question: $("#question").val(),    
                 type: "multiple",
                 choice: $("#choice").val(),
                 solution: $("#solution").val(),
             }
+
+            if (question.question.trim() == "" || question.type.trim() == "" || question.choice.trim() == "" || question.solution.trim() == "") {
+                $('#responseMessage').html("<b style='color:red'>Sorry the question info is incomplete</b>");
+                return
+            }
+
             $('#responseMessage').html("");
 
             event.preventDefault();
@@ -18,7 +24,7 @@
                 type: 'post',
                 dataType: 'json',
                 contentType: 'application/json',
-                data: JSON.stringify(classroom),
+                data: JSON.stringify(question),
                 success: function (response) {
                     $('#responseMessage').html("<b style='color:green'>"+response.ResponseText+" Will redirect back to dashboard...</b>");
                     $("#question_add input").prop("disabled", true);
