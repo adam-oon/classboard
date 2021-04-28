@@ -7,7 +7,7 @@ Our project is lightweight & easy to setup in minutes.
 
 ### .env guide
 Following environment variables are required to startup the program
-DB_USER=<database_username>
-DB_PASSWORD=<database_password>
-DB_IP=<database_ip:port>
-DB_SCHEMA=<database_schema>
+- DB_USER=<database_username>
+- DB_PASSWORD=<database_password>
+- DB_IP=<database_ip:port>
+- DB_SCHEMA=<database_schema>
